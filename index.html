@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NotebookLM Manual – IIS Mendel Villa Cortese</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            mendel: {
+              green: "#365314", earth: "#854D0E", light: "#F8FAF5",
+              slate: "#1E293B", accent: "#166534"
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&display=swap');
+    :root { color-scheme: light; --green-main: #365314; --green-mid: #16a34a; --green-light: #22c55e; }
+    * { font-family: 'Inter', system-ui, sans-serif; box-sizing: border-box; }
+
+    /* ── Background ── */
+    body {
+      background: #f0fdf4;
+      color: #1E293B;
+      overflow-x: hidden;
+    }
+    body::before {
+      content:'';
+      position:fixed; inset:0; z-index:0; pointer-events:none;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% 0%, rgba(34,197,94,.12) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 50% at 90% 100%, rgba(59,130,246,.10) 0%, transparent 50%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(132,204,22,.06) 0%, transparent 60%);
+    }
+    main { position:relative; z-index:1; }
+
+    /* ── Animated blobs ── */
+    .blob {
+      position:fixed; border-radius:9999px; filter:blur(80px);
+      pointer-events:none; z-index:0; opacity:.35;
+      animation: blobMove 18s ease-in-out infinite alternate;
+    }
+    .blob-1 { width:600px; height:600px; top:-200px; left:-200px; background:radial-gradient(circle, #bbf7d0, #4ade80); animation-delay:0s; }
+    .blob-2 { width:500px; height:500px; bottom:-150px; right:-150px; background:radial-gradient(circle, #bfdbfe, #60a5fa); animation-delay:-6s; }
+    .blob-3 { width:350px; height:350px; top:40%; left:60%; background:radial-gradient(circle, #fef08a, #fbbf24); animation-delay:-12s; opacity:.2; }
+    @keyframes blobMove { 0%{transform:translate(0,0) scale(1);} 50%{transform:translate(40px,-30px) scale(1.08);} 100%{transform:translate(-30px,40px) scale(.95);} }
+
+    /* ── Glass nav ── */
+    .glass-header {
+      background:rgba(255,255,255,.88);
+      backdrop-filter:blur(24px) saturate(200%);
+      border-bottom:1px solid rgba(255,255,255,.6);
+      box-shadow:0 4px 40px rgba(0,0,0,.08), 0 1px 0 rgba(255,255,255,.6) inset;
+    }
+
+    /* ── Reveal animation ── */
+    .reveal { opacity:0; transform:translateY(32px); transition:opacity .7s cubic-bezier(.4,0,.2,1), transform .7s cubic-bezier(.4,0,.2,1); }
+    .reveal.visible { opacity:1; transform:translateY(0); }
+
+    /* ── Cards ── */
+    .glass-card {
+      background:rgba(255,255,255,.92);
+      border:1px solid rgba(255,255,255,.8);
+      border-radius:2.5rem;
+      box-shadow:0 20px 60px rgba(0,0,0,.08), 0 0 0 1px rgba(255,255,255,.5) inset;
+      backdrop-filter:blur(10px);
+      transition:transform .4s cubic-bezier(.4,0,.2,1), box-shadow .4s;
+      padding:2rem;
+    }
+    .glass-card:hover { transform:translateY(-6px); box-shadow:0 32px 80px rgba(0,0,0,.14), 0 0 0 1px rgba(255,255,255,.8) inset; }
+
+    .soft-card {
+      background:linear-gradient(135deg, rgba(255,255,255,.98) 0%, rgba(248,250,252,.95) 100%);
+      border:1px solid rgba(226,232,240,.8);
+      border-radius:1.5rem;
+      padding:1.25rem;
+      box-shadow:0 8px 30px rgba(0,0,0,.06), 0 0 0 1px rgba(255,255,255,.5) inset;
+      transition:all .3s ease;
+    }
+    .soft-card:hover { transform:translateY(-3px); box-shadow:0 16px 50px rgba(0,0,0,.1), 0 0 0 1px rgba(255,255,255,.8) inset; }
+
+    .prompt-card {
+      background:linear-gradient(135deg,#fff 0%,#fafafa 100%);
+      border:1px solid #eef2f7; border-left-width:4px;
+      border-radius:1.75rem; padding:1.5rem;
+      box-shadow:0 8px 30px rgba(0,0,0,.05), 0 0 0 1px rgba(255,255,255,.5) inset;
+      transition:all .35s cubic-bezier(.4,0,.2,1); position:relative; overflow:hidden;
+    }
+    .prompt-card:hover { transform:translateY(-5px) scale(1.025); box-shadow:0 24px 60px rgba(0,0,0,.13); }
+
+    /* ── Gradient border cards ── */
+    .glow-card {
+      position:relative; border-radius:2.5rem; padding:2px;
+      background:linear-gradient(135deg, #22c55e, #16a34a, #166534);
+      box-shadow:0 0 40px rgba(34,197,94,.25);
+    }
+    .glow-card-inner { background:#fff; border-radius:calc(2.5rem - 2px); padding:2rem; }
+    .glow-card-blue { background:linear-gradient(135deg,#60a5fa,#2563eb,#1d4ed8); box-shadow:0 0 40px rgba(96,165,250,.2); }
+    .glow-card-purple { background:linear-gradient(135deg,#c084fc,#9333ea,#7e22ce); box-shadow:0 0 40px rgba(192,132,252,.2); }
+    .glow-card-orange { background:linear-gradient(135deg,#fb923c,#f97316,#c2410c); box-shadow:0 0 40px rgba(251,146,60,.2); }
+
+    /* ── Hero ── */
+    .hero-badge {
+      background:linear-gradient(135deg,rgba(34,197,94,.18),rgba(22,163,74,.12));
+      border:1px solid rgba(34,197,94,.35);
+      box-shadow:0 8px 25px rgba(34,197,94,.18), 0 0 0 1px rgba(255,255,255,.3) inset;
+    }
+    .hero-title { font-size:clamp(3rem,7vw,5.5rem); font-weight:900; line-height:.95; letter-spacing:-.04em; }
+    .gradient-text { background:linear-gradient(135deg,#365314 0%,#22c55e 60%,#84cc16 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .gradient-text-blue { background:linear-gradient(135deg,#1d4ed8 0%,#60a5fa 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+    /* ── KPIs ── */
+    .kpi {
+      display:inline-flex; align-items:center; gap:.5rem;
+      border:1px solid rgba(226,232,240,.9);
+      background:rgba(255,255,255,.95);
+      padding:.85rem 1.3rem; border-radius:1.5rem;
+      font-weight:800; font-size:.9rem;
+      box-shadow:0 8px 25px rgba(0,0,0,.07), 0 0 0 1px rgba(255,255,255,.5) inset;
+      transition:all .3s ease;
+    }
+    .kpi:hover { transform:translateY(-3px); box-shadow:0 16px 40px rgba(0,0,0,.12); }
+
+    /* ── Steps ── */
+    .step-badge {
+      width:48px; height:48px; border-radius:9999px;
+      display:inline-flex; align-items:center; justify-content:center;
+      font-weight:900; font-size:1.2rem; color:#fff;
+      box-shadow:0 12px 30px rgba(0,0,0,.22), 0 4px 12px rgba(0,0,0,.1);
+      flex:0 0 auto; transition:all .3s ease;
+    }
+    .step-badge:hover { transform:scale(1.12) rotate(6deg); }
+
+    /* ── Pills ── */
+    .pill {
+      display:inline-flex; align-items:center; gap:.5rem;
+      padding:.55rem .95rem; border-radius:9999px;
+      border:1px solid rgba(226,232,240,.9);
+      background:rgba(255,255,255,.9);
+      font-weight:800; font-size:.72rem; text-transform:uppercase; letter-spacing:.1em;
+      color:#0f172a; white-space:nowrap;
+      box-shadow:0 4px 15px rgba(0,0,0,.06);
+      transition:all .3s cubic-bezier(.4,0,.2,1);
+    }
+    .pill:hover { transform:translateY(-2px) scale(1.06); background:#fff; box-shadow:0 8px 25px rgba(0,0,0,.12); color:#365314; }
+
+    /* ── Copy button ── */
+    .copywrap { position:relative; }
+    .copybtn {
+      position:absolute; top:14px; right:14px; z-index:10;
+      border:1px solid rgba(226,232,240,.9); background:rgba(255,255,255,.95);
+      border-radius:9999px; padding:.45rem .85rem;
+      font-weight:900; font-size:.7rem; text-transform:uppercase; letter-spacing:.12em;
+      display:inline-flex; align-items:center; gap:.4rem; color:#0f172a;
+      box-shadow:0 4px 15px rgba(0,0,0,.1); transition:all .3s ease;
+    }
+    .copybtn:hover { transform:scale(1.06); background:#f0fdf4; color:#365314; }
+
+    /* ── Code blocks ── */
+    pre {
+      white-space:pre-wrap; word-wrap:break-word;
+      border-radius:1.5rem; border:1px solid rgba(30,41,59,.25);
+      background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);
+      color:#d1fae5; padding:1.25rem; font-size:.88rem; line-height:1.7;
+      overflow:hidden;
+      box-shadow:0 15px 40px rgba(0,0,0,.3), 0 0 0 1px rgba(255,255,255,.08) inset;
+    }
+
+    /* ── Details ── */
+    details {
+      border-radius:1.75rem;
+      background:linear-gradient(135deg,#fff 0%,#fafafa 100%);
+      border:1px solid rgba(226,232,240,.9);
+      box-shadow:0 8px 30px rgba(0,0,0,.06), 0 0 0 1px rgba(255,255,255,.5) inset;
+      transition:all .3s ease; margin-bottom:1rem;
+    }
+    details:hover { box-shadow:0 16px 50px rgba(0,0,0,.1); }
+    details > summary {
+      cursor:pointer; list-style:none;
+      padding:1.25rem 1.5rem; font-weight:900;
+      transition:color .3s;
+    }
+    details > summary:hover { color:#365314; }
+    details > summary::-webkit-details-marker { display:none; }
+    details[open] > summary { border-bottom:1px solid rgba(226,232,240,.5); }
+    .details-body { padding:1.15rem 1.5rem 1.5rem; color:#334155; }
+
+    /* ── Sections ── */
+    .anchor { scroll-margin-top:110px; }
+    .section-tag {
+      display:inline-flex; align-items:center; gap:.5rem;
+      padding:.4rem 1rem; border-radius:9999px;
+      font-size:.7rem; font-weight:900; letter-spacing:.15em; text-transform:uppercase;
+    }
+
+    /* ── Scroll to top ── */
+    #toTop {
+      position:fixed; right:20px; bottom:20px; z-index:60; display:none;
+      border:1px solid rgba(226,232,240,.9);
+      background:rgba(255,255,255,.95);
+      border-radius:9999px; padding:.95rem 1.2rem;
+      font-weight:900; font-size:.72rem; text-transform:uppercase; letter-spacing:.12em;
+      box-shadow:0 20px 50px rgba(0,0,0,.15);
+      backdrop-filter:blur(20px) saturate(180%);
+      color:#0f172a; transition:all .3s ease;
+    }
+    #toTop:hover { transform:translateY(-5px); background:#f0fdf4; color:#365314; }
+
+    /* ── Float ── */
+    @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+    .float-animation { animation:float 3s ease-in-out infinite; }
+
+    /* ── Stats counter ── */
+    .stat-num { font-size:3rem; font-weight:900; line-height:1; letter-spacing:-.05em; }
+
+    /* ── Timeline ── */
+    .timeline-line { position:absolute; left:23px; top:0; bottom:0; width:2px; background:linear-gradient(to bottom,#22c55e,#16a34a,#166534); }
+    .timeline-item { position:relative; padding-left:60px; padding-bottom:2rem; }
+    .timeline-dot {
+      position:absolute; left:0; top:4px;
+      width:48px; height:48px; border-radius:9999px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:900; font-size:1rem; color:#fff;
+      box-shadow:0 8px 20px rgba(0,0,0,.2);
+      z-index:2;
+    }
+
+    /* ── Feature grid ── */
+    .feature-icon {
+      width:56px; height:56px; border-radius:1.25rem;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.5rem; margin-bottom:1rem;
+      box-shadow:0 8px 20px rgba(0,0,0,.12);
+    }
+
+    /* ── Highlight box ── */
+    .highlight-box {
+      background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(22,163,74,.05));
+      border:1px solid rgba(34,197,94,.2);
+      border-radius:1.5rem; padding:1.25rem;
+    }
+    .highlight-box-blue { background:linear-gradient(135deg,rgba(96,165,250,.1),rgba(59,130,246,.06)); border-color:rgba(96,165,250,.25); }
+    .highlight-box-purple { background:linear-gradient(135deg,rgba(192,132,252,.1),rgba(147,51,234,.06)); border-color:rgba(192,132,252,.25); }
+    .highlight-box-orange { background:linear-gradient(135deg,rgba(251,146,60,.1),rgba(249,115,22,.06)); border-color:rgba(251,146,60,.25); }
+
+    /* ── Category title ── */
+    .category-title {
+      display:flex; align-items:center; gap:.75rem;
+      font-size:1.4rem; font-weight:900; letter-spacing:-.02em; text-transform:uppercase;
+      margin-bottom:1.25rem;
+      background:linear-gradient(135deg,#0f172a 0%,#334155 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+
+    /* ── Chip ── */
+    .chip {
+      display:inline-flex; align-items:center; gap:.35rem;
+      padding:.3rem .75rem; border-radius:9999px;
+      font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em;
+    }
+    .chip-green { background:rgba(34,197,94,.12); color:#166534; border:1px solid rgba(34,197,94,.25); }
+    .chip-blue { background:rgba(59,130,246,.12); color:#1d4ed8; border:1px solid rgba(59,130,246,.25); }
+    .chip-red { background:rgba(239,68,68,.1); color:#b91c1c; border:1px solid rgba(239,68,68,.2); }
+    .chip-purple { background:rgba(147,51,234,.1); color:#6b21a8; border:1px solid rgba(147,51,234,.2); }
+    .chip-orange { background:rgba(249,115,22,.1); color:#9a3412; border:1px solid rgba(249,115,22,.2); }
+
+    /* ── Zoom modal ── */
+    #imgZoomModal { position:fixed; inset:0; background:rgba(0,0,0,.92); display:none; z-index:9999; align-items:center; justify-content:center; padding:1rem; }
+    #imgZoomModal.open { display:flex; }
+
+    /* ── New: Audio/Video section colors ── */
+    .audio-gradient { background:linear-gradient(135deg,#1e1b4b,#312e81,#4338ca); }
+    .video-gradient { background:linear-gradient(135deg,#7f1d1d,#991b1b,#dc2626); }
+
+    /* ── Responsive tweaks ── */
+    @media(max-width:768px){
+      .hero-title { font-size:2.8rem; }
+      .glass-card { padding:1.25rem; border-radius:1.75rem; }
+    }
+  </style>
+</head>
+
+<body class="antialiased">
+
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <nav class="glass-header sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-3 flex flex-col lg:flex-row justify-between items-center gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="bg-gradient-to-br from-mendel-green to-green-600 p-2.5 rounded-2xl text-white shadow-xl float-animation">
+          <i class="fa-solid fa-leaf text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-black uppercase tracking-tighter leading-none text-slate-900">
+            Mendel <span class="gradient-text">NotebookLM</span>
+          </h1>
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Operational Manual for Teachers</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-1.5">
+        <a href="#intro" class="pill"><i class="fa-solid fa-compass"></i> Intro</a>
+        <a href="#workspace" class="pill"><i class="fa-solid fa-cloud"></i> Workspace</a>
+        <a href="#riassunto" class="pill"><i class="fa-solid fa-table"></i> Summary</a>
+        <a href="#materiali" class="pill"><i class="fa-solid fa-folder-open"></i> Materials</a>
+        <a href="#primo-uso" class="pill"><i class="fa-solid fa-rocket"></i> First Use</a>
+        <a href="#interfaccia" class="pill"><i class="fa-solid fa-window-maximize"></i> Interface</a>
+        <a href="#zona-studio" class="pill"><i class="fa-solid fa-graduation-cap"></i> Study Zone</a>
+        <a href="#audio-video" class="pill"><i class="fa-solid fa-headphones"></i> Audio/Video</a>
+        <a href="#presentazioni" class="pill"><i class="fa-solid fa-desktop"></i> Slides</a>
+        <a href="#deep-research" class="pill"><i class="fa-solid fa-magnifying-glass"></i> Deep Research</a>
+        <a href="#tabella-dati" class="pill"><i class="fa-solid fa-table-cells"></i> Tables</a>
+        <a href="#template-prompt" class="pill"><i class="fa-solid fa-terminal"></i> Templatess</a>
+        <a href="#prompt" class="pill"><i class="fa-solid fa-bolt"></i> Subjects</a>
+        <a href="#ricette" class="pill"><i class="fa-solid fa-utensils"></i> Recipes</a>
+        <a href="#mobile" class="pill"><i class="fa-solid fa-mobile-screen"></i> App</a>
+        <a href="#condivisione" class="pill"><i class="fa-solid fa-share-nodes"></i> Share</a>
+        <a href="#errori" class="pill"><i class="fa-solid fa-triangle-exclamation"></i> Issues</a>
+        <a href="#inclusione" class="pill"><i class="fa-solid fa-universal-access"></i> Inclusion</a>
+        <a href="#privacy" class="pill"><i class="fa-solid fa-shield-halved"></i> Privacy</a>
+        <a href="https://notebooklm.google.com" target="_blank"
+           class="bg-gradient-to-r from-mendel-green to-green-600 text-white px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-widest hover:shadow-2xl transition-all shadow-lg hover:scale-105 hover:from-green-700 hover:to-green-500 ml-2">
+          Open NotebookLM <i class="fa-solid fa-arrow-right ml-1"></i>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <button id="toTop" type="button" aria-label="Back to top">
+    <i class="fa-solid fa-arrow-up mr-1"></i> Top
+  </button>
+
+  <main class="container mx-auto px-4 py-12 max-w-7xl">
+
+    <section class="mb-20 reveal">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <div class="space-y-7">
+          <div class="hero-badge inline-flex items-center space-x-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-mendel-green">
+            <i class="fa-solid fa-star"></i>
+            <span>Internal Teacher Training · PTOF 2025/2026</span>
+          </div>
+          <h2 class="hero-title text-slate-900">
+            The AI that studies<br><span class="gradient-text italic">your materials.</span>
+          </h2>
+          <p class="text-lg text-slate-600 leading-relaxed max-w-xl">
+            NotebookLM is not an oracle that invents answers. It is an assistant that works
+            <strong>only</strong> on PDFs, handouts, links, and videos that you upload. Responses are
+            <strong>anchored to the sources</strong> and verifiable with precise citations.
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <span class="kpi"><i class="fa-solid fa-check text-green-600"></i> Teacher's control</span>
+            <span class="kpi"><i class="fa-solid fa-quote-left text-blue-600"></i> Citations and sources</span>
+            <span class="kpi"><i class="fa-solid fa-shield-halved text-slate-700"></i> Safe use at school</span>
+            <span class="kpi"><i class="fa-solid fa-bolt text-amber-500"></i> Free</span>
+          </div>
+        </div>
+        <div class="glow-card">
+          <div class="glow-card-inner">
+            <h4 class="text-center font-black text-slate-400 text-[10px] uppercase mb-6 tracking-[.2em]">Enhanced skills (indicative values)</h4>
+            <div style="position:relative;width:100%;height:300px;">
+              <canvas id="impactChart"></canvas>
+            </div>
+            <p class="text-center text-xs text-slate-400 mt-4">The actual impact depends on the quality of the uploaded sources.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-20 reveal">
+      <div class="glow-card">
+        <div class="glow-card-inner grid grid-cols-2 md:grid-cols-4 gap-8 text-center py-4">
+          <div>
+            <div class="stat-num gradient-text" data-target="50">50</div>
+            <p class="text-sm font-bold text-slate-500 mt-1">Sources per notebook</p>
+          </div>
+          <div>
+            <div class="stat-num gradient-text-blue" data-target="5">5</div>
+            <p class="text-sm font-bold text-slate-500 mt-1">Min. to start</p>
+          </div>
+          <div>
+            <div class="stat-num" style="background:linear-gradient(135deg,#f97316,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;" data-target="100">100</div>
+            <p class="text-sm font-bold text-slate-500 mt-1">% teacher's control</p>
+          </div>
+          <div>
+            <div class="stat-num" style="background:linear-gradient(135deg,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;" data-target="0">€0</div>
+            <p class="text-sm font-bold text-slate-500 mt-1">Cost (Google account)</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="intro" class="anchor mb-20 reveal">
+      <div class="text-center mb-12">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-compass"></i> Introduction
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">What is NotebookLM</h3>
+        <p class="text-slate-500 mt-2 italic">What it does, what it does not do, and what you can get right away as a teacher.</p>
+      </div>
+
+      <div class="my-10 flex justify-center">
+        <figure class="max-w-5xl w-full">
+          <img src="Schermata NotebookLM.png"
+               alt="NotebookLM initial interface"
+               class="rounded-3xl border border-slate-200 shadow-2xl cursor-zoom-in transition-all hover:shadow-[0_40px_100px_rgba(0,0,0,.2)] hover:scale-[1.01]"
+               onclick="openZoom(this.src)">
+          <figcaption class="mt-4 text-center text-sm text-slate-500 italic">
+            NotebookLM home screen: <strong>Sources</strong> on the left, <strong>Chat</strong> in the center, <strong>Study Zone</strong> on the right.
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="max-w-5xl mx-auto mb-12">
+        <div class="glass-card border-t-8 border-mendel-green">
+          <div class="text-center mb-8">
+            <h3 class="text-3xl font-black tracking-tighter">Updated step-by-step guide</h3>
+            <p class="text-slate-500 italic mt-2">From first access to the most advanced features</p>
+          </div>
+          <div class="space-y-6 text-sm text-slate-700 leading-relaxed">
+            <div class="highlight-box">
+              <p><strong>"NotebookLM does one thing, and it does it well: it takes the materials you already use and turns them into ready-to-use tools. It adds nothing of its own, it does not browse the internet, it does not invent. It only works with what you give it."</strong></p>
+            </div>
+
+            <div style="position:relative;">
+              <div class="timeline-line"></div>
+              <div class="timeline-item">
+                <div class="timeline-dot" style="background:linear-gradient(135deg,#365314,#22c55e);">1</div>
+                <h4 class="font-black text-lg mb-2">Accessing and creating a notebook</h4>
+                <p>Go to <strong>notebooklm.google.com</strong> and click <strong>"New notebook"</strong>. NotebookLM responds <strong>only</strong> to the sources you provide — this eliminates "hallucinations" and creates a safe information boundary.</p>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot" style="background:linear-gradient(135deg,#2563eb,#60a5fa);">2</div>
+                <h4 class="font-black text-lg mb-2">Managing sources (uploading and searching)</h4>
+                <p>Classic upload: PDF, copied text, websites, YouTube videos. You can also ask it to find files in your Google Drive or activate <strong>Deep Research</strong> to search the web and build a report as the primary source.</p>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot" style="background:linear-gradient(135deg,#7c3aed,#c084fc);">3</div>
+                <h4 class="font-black text-lg mb-2">Advanced strategy: have it write the prompt for you</h4>
+                <p>One of the most powerful features is using NotebookLM to <strong>write instructions for itself</strong>: ask <em>"Create a detailed prompt to create slides for…"</em>, copy the result and reuse it.</p>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot" style="background:linear-gradient(135deg,#f97316,#fbbf24);">4</div>
+                <h4 class="font-black text-lg mb-2">Transforming documents into content</h4>
+                <p>Presentations, Video overviews, Audio overviews (podcasts), Concept maps, Infographics, Data tables — all tools generatable in a few clicks.</p>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot" style="background:linear-gradient(135deg,#059669,#34d399);">5</div>
+                <h4 class="font-black text-lg mb-2">Sharing: personalised chatbot</h4>
+                <p>You can share the notebook in "viewer" mode: whoever receives the link can ask questions but cannot see the original files. It is like creating an expert assistant on your materials.</p>
+              </div>
+              <div class="timeline-item" style="padding-bottom:0;">
+                <div class="timeline-dot" style="background:linear-gradient(135deg,#0f172a,#334155);">6</div>
+                <h4 class="font-black text-lg mb-2">Mobile app and studying on the go</h4>
+                <p>NotebookLM app for iOS and Android with automatic flashcards and quizzes. Study and review even outside the classroom.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-12 gap-8 items-start">
+        <div class="lg:col-span-7 space-y-6">
+          <div class="glass-card border-t-8 border-mendel-green">
+            <div class="flex items-start gap-4">
+              <div class="step-badge" style="background:linear-gradient(135deg,#365314,#22c55e);">A</div>
+              <div>
+                <h4 class="text-2xl font-black tracking-tighter">NotebookLM in one sentence</h4>
+                <p class="text-slate-600 mt-2 leading-relaxed">It is a teaching assistant that <strong>reads and studies the materials you already use</strong> and transforms them into <strong>ready-made tools</strong>: summaries, maps, FAQs, study guides, questions and assessments.</p>
+                <div class="mt-5 grid md:grid-cols-2 gap-4">
+                  <div class="soft-card">
+                    <p class="text-xs font-black uppercase tracking-widest text-slate-400 mb-2"><i class="fa-solid fa-xmark text-red-500 mr-1"></i> What it is NOT</p>
+                    <ul class="text-sm text-slate-600 space-y-1.5">
+                      <li class="flex items-start gap-2"><span class="chip chip-red">✕</span> It is not a search engine</li>
+                      <li class="flex items-start gap-2"><span class="chip chip-red">✕</span> It does not browse the Internet</li>
+                      <li class="flex items-start gap-2"><span class="chip chip-red">✕</span> It does not add external knowledge</li>
+                      <li class="flex items-start gap-2"><span class="chip chip-red">✕</span> If it is not in the sources, it does not use it</li>
+                    </ul>
+                  </div>
+                  <div class="soft-card">
+                    <p class="text-xs font-black uppercase tracking-widest text-slate-400 mb-2"><i class="fa-solid fa-check text-green-600 mr-1"></i> Why it is ideal at school</p>
+                    <ul class="text-sm text-slate-600 space-y-1.5">
+                      <li class="flex items-start gap-2"><span class="chip chip-green">✓</span> Verifiable answers</li>
+                      <li class="flex items-start gap-2"><span class="chip chip-green">✓</span> Total control (checkboxes)</li>
+                      <li class="flex items-start gap-2"><span class="chip chip-green">✓</span> Quick inclusive tools</li>
+                      <li class="flex items-start gap-2"><span class="chip chip-green">✓</span> Time saving</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="mt-5 p-5 rounded-3xl highlight-box">
+                  <p class="text-sm font-black text-slate-900 mb-2">How it always works (sequence)</p>
+                  <ol class="text-sm text-slate-600 space-y-1 list-decimal list-inside">
+                    <li>You upload the materials (sources)</li>
+                    <li>You select the active sources (checkboxes)</li>
+                    <li>You ask (chat) or choose a function (study zone)</li>
+                    <li>The AI produces output <strong>only</strong> from those sources</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card border-t-8 border-blue-600">
+            <div class="flex items-start gap-4">
+              <div class="step-badge" style="background:linear-gradient(135deg,#2563eb,#60a5fa);">B</div>
+              <div>
+                <h4 class="text-2xl font-black tracking-tighter">What you can do with it (right away)</h4>
+                <div class="grid md:grid-cols-2 gap-4 mt-4">
+                  <div class="soft-card">
+                    <p class="font-black text-slate-900"><i class="fa-solid fa-wand-magic-sparkles text-blue-600 mr-2"></i>Lesson preparation</p>
+                    <ul class="text-sm text-slate-600 mt-2 space-y-1">
+                      <li>• chapter summaries</li><li>• outlines for explanations</li>
+                      <li>• glossaries (also bilingual)</li><li>• definitions and examples</li>
+                    </ul>
+                  </div>
+                  <div class="soft-card">
+                    <p class="font-black text-slate-900"><i class="fa-solid fa-list-check text-purple-600 mr-2"></i>Assessments</p>
+                    <ul class="text-sm text-slate-600 mt-2 space-y-1">
+                      <li>• questions with solutions</li><li>• graded exercises</li>
+                      <li>• assessment variants</li><li>• page references</li>
+                    </ul>
+                  </div>
+                  <div class="soft-card">
+                    <p class="font-black text-slate-900"><i class="fa-solid fa-universal-access text-green-700 mr-2"></i>Inclusion SEN/SpLD</p>
+                    <ul class="text-sm text-slate-600 mt-2 space-y-1">
+                      <li>• simplifications</li><li>• maps and infographics</li>
+                      <li>• study guides</li><li>• progressive questions</li>
+                    </ul>
+                  </div>
+                  <div class="soft-card">
+                    <p class="font-black text-slate-900"><i class="fa-solid fa-brain text-orange-600 mr-2"></i>Study method</p>
+                    <ul class="text-sm text-slate-600 mt-2 space-y-1">
+                      <li>• overview to get oriented</li><li>• FAQ for active review</li>
+                      <li>• study paths</li><li>• independent support</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="mt-5 p-5 rounded-3xl highlight-box-blue">
+                  <p class="text-sm font-black text-slate-900 mb-1">Golden rule</p>
+                  <p class="text-sm text-slate-700">Quality depends on the <strong>sources</strong> and the <strong>checkboxes</strong>. Fewer (but targeted) sources = more precise and useful results.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 space-y-6">
+          <div class="glass-card border-t-8 border-slate-900" style="background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;">
+            <h4 class="text-2xl font-black tracking-tighter">Mini-guide: "What do I upload?"</h4>
+            <p class="text-slate-300 mt-2 text-sm">Start simple: just one short PDF. Then add sources gradually.</p>
+            <div class="mt-5 space-y-3">
+              <div class="p-4 rounded-2xl" style="background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);">
+                <p class="text-xs font-black uppercase tracking-widest text-green-400 mb-1">Option #1</p>
+                <p class="text-sm text-slate-200">A chapter/handout on what you will teach next week.</p>
+              </div>
+              <div class="p-4 rounded-2xl" style="background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);">
+                <p class="text-xs font-black uppercase tracking-widest text-green-400 mb-1">Option #2</p>
+                <p class="text-sm text-slate-200">An assessment from last year (to create consistent variants).</p>
+              </div>
+              <div class="p-4 rounded-2xl" style="background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);">
+                <p class="text-xs font-black uppercase tracking-widest text-green-400 mb-1">Option #3</p>
+                <p class="text-sm text-slate-200">A technical article or a link you want to "make educational".</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card border-t-8" style="border-top-color:#854D0E;">
+            <h4 class="text-2xl font-black tracking-tighter">ChatGPT vs NotebookLM</h4>
+            <div class="overflow-x-auto mt-4">
+              <table class="w-full text-sm border-separate" style="border-spacing:0;">
+                <thead>
+                  <tr>
+                    <th class="text-left p-3 bg-slate-50 border border-slate-200 rounded-tl-2xl font-black text-red-600">ChatGPT</th>
+                    <th class="text-left p-3 bg-green-50 border border-green-200 rounded-tr-2xl font-black text-green-700">NotebookLM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td class="p-3 border border-slate-200 text-slate-600">General knowledge</td><td class="p-3 border border-slate-200 text-slate-600">Uploaded sources only</td></tr>
+                  <tr><td class="p-3 border border-slate-200 text-slate-600">Can make mistakes/invent</td><td class="p-3 border border-slate-200 text-slate-600">Anchored to sources</td></tr>
+                  <tr><td class="p-3 border border-slate-200 text-slate-600">Useful for creative ideas</td><td class="p-3 border border-slate-200 text-slate-600">Useful for study/teaching</td></tr>
+                  <tr><td class="p-3 border border-slate-200 text-slate-600 rounded-bl-2xl">Less verifiable</td><td class="p-3 border border-slate-200 text-slate-600 rounded-br-2xl">Citations + checkboxes</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="workspace" class="anchor mb-20 reveal">
+      <div class="text-center mb-12">
+        <div class="section-tag bg-blue-50 text-blue-700 border border-blue-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-cloud"></i> Google Workspace
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Institutional Integration</h3>
+        <p class="text-slate-500 mt-2 italic">NotebookLM as a pillar of teaching in the school ecosystem.</p>
+      </div>
+      <div class="glow-card" style="background: linear-gradient(135deg, #1d4ed8, #2563eb, #3b82f6);">
+        <div class="glow-card-inner">
+          <div class="flex flex-col md:flex-row items-center gap-8">
+            <div class="flex-shrink-0 bg-blue-50 p-6 rounded-3xl shadow-inner">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/59/Google_Classroom_Logo.png" alt="Google Classroom" class="w-16 h-16 object-contain">
+            </div>
+            <div>
+              <div class="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black uppercase mb-3">2026 Integration</div>
+              <h4 class="text-2xl font-black tracking-tighter mb-3">A pillar of Google Workspace for Education</h4>
+              <p class="text-slate-700 leading-relaxed text-sm">
+                NotebookLM is now an integral part of the <strong>Google Workspace</strong> suite at IIS Mendel. Google officially recognises it as a key component for enhanced teaching, designed to strengthen critical thinking and support the teacher's daily work while protecting data privacy.
+              </p>
+              <div class="mt-6 grid md:grid-cols-2 gap-4">
+                <div class="p-4 rounded-2xl bg-blue-50 border border-blue-100">
+                  <p class="font-black text-sm text-blue-800"><i class="fa-solid fa-chalkboard-user mr-2"></i>Presence in Classroom</p>
+                  <p class="text-xs text-slate-600 mt-1">You will find it directly among the <strong>Google Classroom</strong> tools. You can import materials from your courses and share notebooks with students in a protected and centralised environment.</p>
+                </div>
+                <div class="p-4 rounded-2xl bg-blue-50 border border-blue-100">
+                  <p class="font-black text-sm text-blue-800"><i class="fa-solid fa-shield-check mr-2"></i>Protected data</p>
+                  <p class="text-xs text-slate-600 mt-1">Using the @agrariomendel.it account ensures data is not used to train public AI models, guaranteeing the complete privacy of teachers and students.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="riassunto" class="anchor mb-20 reveal">
+      <div class="text-center mb-12">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-table"></i> Summary table
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Complete Guide to NotebookLM</h3>
+        <p class="text-slate-500 mt-2 italic">Enhance your Study and Research with Google AI</p>
+      </div>
+
+      <div class="glass-card border-t-8 border-mendel-green mb-8">
+        <p class="text-slate-700 leading-relaxed mb-8 text-lg">NotebookLM is not a simple chatbot, but a true research assistant that works exclusively on the materials you choose to provide. Thanks to Google's <strong>Gemini</strong> model technology, it transforms scattered documents into a structured and queryable knowledge ecosystem.</p>
+
+        <div class="grid lg:grid-cols-2 gap-8 mb-10">
+          <div class="soft-card">
+            <h4 class="text-xl font-black mb-3">The Engines: Gemini Flash and Gemini Pro</h4>
+            <ul class="text-sm text-slate-700 space-y-3">
+              <li><span class="chip chip-green mr-2">Flash</span><strong>Gemini Flash</strong> — default engine, fast and accurate for synthesising large volumes and answering direct questions.</li>
+              <li><span class="chip chip-blue mr-2">Pro</span><strong>Gemini Pro (Plus/Enterprise)</strong> — superior reasoning for multidimensional analyses and complex workflows.</li>
+            </ul>
+          </div>
+          <div class="soft-card">
+            <h4 class="text-xl font-black mb-3">Why use it in Teaching?</h4>
+            <p class="text-sm text-slate-700 leading-relaxed">It becomes an ally for <strong>creating assessments</strong>, <strong>summarising minutes</strong> or preparing <strong>interactive handouts</strong>, always maintaining total control over the sources.</p>
+          </div>
+        </div>
+
+        <div class="mb-10">
+          <h4 class="text-2xl font-black mb-4">Key Features</h4>
+          <ul class="text-sm text-slate-700 space-y-3">
+            <li class="flex items-start gap-3"><span class="chip chip-green mt-0.5">✓</span><span><strong>Multi-format Management:</strong> PDF, Google Docs, audio transcripts, web links.</span></li>
+            <li class="flex items-start gap-3"><span class="chip chip-green mt-0.5">✓</span><span><strong>Source-Based Chat:</strong> responds by citing passages verbatim, eliminating hallucinations.</span></li>
+            <li class="flex items-start gap-3"><span class="chip chip-green mt-0.5">✓</span><span><strong>Study Guides and Maps:</strong> timelines, summary outlines and automatic concept maps.</span></li>
+            <li class="flex items-start gap-3"><span class="chip chip-green mt-0.5">✓</span><span><strong>Audio Overview and Video Recap:</strong> audio dialogue between two AI hosts or short explanatory videos.</span></li>
+            <li class="flex items-start gap-3"><span class="chip chip-green mt-0.5">✓</span><span><strong>Deep Research and Data Tables:</strong> intelligent agents to search the web and organise data in exportable tables.</span></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-2xl font-black mb-4">Examples of Effective Prompts</h4>
+          <div class="grid md:grid-cols-3 gap-4">
+            <div class="highlight-box-blue rounded-2xl p-4">
+              <p class="font-black text-blue-700 mb-2 text-xs uppercase tracking-widest">Summary and Analysis</p>
+              <ul class="text-sm text-slate-600 space-y-2 italic">
+                <li>"Create a thematic summary of 500 words with direct citations."</li>
+                <li>"Show the key points and indicate where they conflict with each other."</li>
+              </ul>
+            </div>
+            <div class="highlight-box-purple rounded-2xl p-4">
+              <p class="font-black text-purple-700 mb-2 text-xs uppercase tracking-widest">Operational Management</p>
+              <ul class="text-sm text-slate-600 space-y-2 italic">
+                <li>"Extract the decisions from the minutes, attaching the source for each."</li>
+                <li>"Generate a briefing: Context → Critical Points → Recommendations."</li>
+              </ul>
+            </div>
+            <div class="highlight-box-orange rounded-2xl p-4">
+              <p class="font-black text-orange-700 mb-2 text-xs uppercase tracking-widest">Training and Podcast</p>
+              <ul class="text-sm text-slate-600 space-y-2 italic">
+                <li>"Script for a two-voice dialogue: Host A explains, Host B challenges with difficult questions."</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="materiali" class="anchor mb-20 reveal">
+      <div class="text-center mb-12">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-folder-open"></i> Course materials
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Course Materials</h3>
+        <p class="text-slate-500 mt-2 italic">Starter links and sources: so everyone can begin without wasting time.</p>
+      </div>
+      <div class="grid lg:grid-cols-12 gap-8 items-start">
+        <div class="lg:col-span-7">
+          <div class="glass-card border-t-8 border-mendel-green">
+            <div class="flex items-start gap-4">
+              <div class="step-badge" style="background:linear-gradient(135deg,#365314,#22c55e);"><i class="fa-solid fa-folder-open"></i></div>
+              <div class="w-full">
+                <h4 class="text-2xl font-black tracking-tighter">Course folder</h4>
+                <p class="text-slate-600 mt-2 text-sm">Enter the links to the training materials here.</p>
+                <div class="mt-5 grid md:grid-cols-2 gap-4">
+                  <a class="soft-card hover:bg-green-50 transition block" href="#" target="_blank">
+                    <p class="text-xs font-black uppercase tracking-widest text-slate-400">Course slides</p>
+                    <p class="font-black mt-1"><i class="fa-solid fa-chalkboard-user text-mendel-green mr-2"></i>Presentation</p>
+                    <p class="text-xs text-slate-500 mt-1">Replace "#" with the link.</p>
+                  </a>
+                  <a class="soft-card hover:bg-red-50 transition block" href="#" target="_blank">
+                    <p class="text-xs font-black uppercase tracking-widest text-slate-400">Starter PDF</p>
+                    <p class="font-black mt-1"><i class="fa-solid fa-file-pdf text-red-600 mr-2"></i>Test document</p>
+                    <p class="text-xs text-slate-500 mt-1">2–5 pages, selectable text.</p>
+                  </a>
+                  <a class="soft-card hover:bg-blue-50 transition block" href="#" target="_blank">
+                    <p class="text-xs font-black uppercase tracking-widest text-slate-400">Checklist</p>
+                    <p class="font-black mt-1"><i class="fa-solid fa-list-check text-blue-600 mr-2"></i>5-minute sequence</p>
+                    <p class="text-xs text-slate-500 mt-1">Print or send in chat.</p>
+                  </a>
+                  <a class="soft-card hover:bg-red-50 transition block" href="#" target="_blank">
+                    <p class="text-xs font-black uppercase tracking-widest text-slate-400">YouTube example</p>
+                    <p class="font-black mt-1"><i class="fa-brands fa-youtube text-red-600 mr-2"></i>"test" video</p>
+                    <p class="text-xs text-slate-500 mt-1">Link to paste into NotebookLM.</p>
+                  </a>
+                </div>
+                <div class="mt-5 p-4 rounded-2xl highlight-box">
+                  <p class="text-xs font-black uppercase tracking-widest text-mendel-green mb-2">Anti-panic tip</p>
+                  <p class="text-sm text-slate-700">Prepare an "easy" PDF and a "difficult" one: show how results change when too many sources are checked.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="lg:col-span-5 space-y-6">
+          <div class="glass-card border-t-8 border-blue-600">
+            <h4 class="text-2xl font-black tracking-tighter">Recommended source package</h4>
+            <ul class="text-sm text-slate-700 mt-3 space-y-2">
+              <li>• 1 short PDF (basic)</li><li>• 1 medium PDF (in-depth)</li>
+              <li>• 1 web page link (technical article)</li><li>• 1 YouTube video (10–15 min)</li>
+            </ul>
+          </div>
+          <div class="glass-card border-t-8 border-slate-900">
+            <h4 class="text-2xl font-black tracking-tighter">Mini-script for course launch</h4>
+            <div class="copywrap mt-4">
+              <button class="copybtn" type="button" data-copy="script1"><i class="fa-solid fa-copy"></i> Copia</button>
+              <pre id="script1">"Today we will use NotebookLM as a teaching tool: we upload 1 shared PDF, check only that one, generate the Overview and Map, then create an assessment with solutions and citations. The goal is not to 'do AI', but to save time while maintaining control and quality."</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="primo-uso" class="anchor mb-20 reveal">
+      <div class="text-center mb-12">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-rocket"></i> First use
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">First use in 5 minutes</h3>
+        <p class="text-slate-500 mt-2">A simple sequence that always works.</p>
+      </div>
+      <div class="grid md:grid-cols-5 gap-4">
+        <div class="glass-card text-center border-t-8 border-mendel-green">
+          <div class="step-badge mx-auto mb-4" style="background:linear-gradient(135deg,#365314,#22c55e);">1</div>
+          <p class="font-black">Upload 1 short PDF</p>
+          <p class="text-sm text-slate-600 mt-2">2–5 pages, clear content.</p>
+        </div>
+        <div class="glass-card text-center border-t-8 border-blue-600">
+          <div class="step-badge mx-auto mb-4" style="background:linear-gradient(135deg,#2563eb,#60a5fa);">2</div>
+          <p class="font-black">Check only that PDF</p>
+          <p class="text-sm text-slate-600 mt-2">Reduces confusion and improves accuracy.</p>
+        </div>
+        <div class="glass-card text-center border-t-8" style="border-top-color:#854D0E;">
+          <div class="step-badge mx-auto mb-4" style="background:linear-gradient(135deg,#854D0E,#d97706);">3</div>
+          <p class="font-black">Open Study Zone</p>
+          <p class="text-sm text-slate-600 mt-2">Start with the automatic tools.</p>
+        </div>
+        <div class="glass-card text-center border-t-8 border-slate-900">
+          <div class="step-badge mx-auto mb-4" style="background:linear-gradient(135deg,#0f172a,#334155);">4</div>
+          <p class="font-black">Generate Overview</p>
+          <p class="text-sm text-slate-600 mt-2">Immediately orients you to the content.</p>
+        </div>
+        <div class="glass-card text-center border-t-8 border-green-700">
+          <div class="step-badge mx-auto mb-4" style="background:linear-gradient(135deg,#15803d,#4ade80);">5</div>
+          <p class="font-black">Map + FAQ</p>
+          <p class="text-sm text-slate-600 mt-2">Ready for review and inclusion.</p>
+        </div>
+      </div>
+      <div class="glass-card mt-6 border-t-8 border-blue-600">
+        <div class="flex items-start gap-4">
+          <div class="step-badge" style="background:linear-gradient(135deg,#2563eb,#60a5fa);"><i class="fa-solid fa-clipboard"></i></div>
+          <div class="w-full">
+            <p class="font-black">Ready prompt (copy and paste)</p>
+            <p class="text-slate-600 text-sm mt-1">Use it in chat after the Study Zone, with the PDF checked.</p>
+            <div class="copywrap mt-4">
+              <button class="copybtn" type="button" data-copy="p1"><i class="fa-solid fa-copy"></i> Copia</button>
+              <pre id="p1">"Summarise this material in 10 key points for 9th-grade students, using short sentences and citing the sources."</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="interfaccia" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-window-maximize"></i> The interface
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">How the interface is structured</h3>
+        <p class="text-slate-500 mt-2 italic">Three zones. If you understand these, you know how to use NotebookLM.</p>
+      </div>
+      <div class="grid lg:grid-cols-3 gap-8">
+        <div class="glass-card border-t-8 border-red-500">
+          <div class="step-badge mb-5" style="background:linear-gradient(135deg,#ef4444,#fb7185);">1</div>
+          <h4 class="text-xl font-black mb-3 uppercase">Left column:<br><span class="text-slate-400">Sources</span></h4>
+          <p class="text-sm text-slate-600 mb-5">This is the <strong>library</strong>: this is where you upload materials. Without sources, the assistant cannot work.</p>
+          <ul class="space-y-3 text-xs font-bold text-slate-500">
+            <li class="flex items-start"><i class="fa-solid fa-circle-plus text-red-500 mr-3 mt-1"></i><span><strong>+ Source</strong>: upload PDFs, links, web content, videos.</span></li>
+            <li class="flex items-start"><i class="fa-solid fa-check-double text-red-500 mr-3 mt-1"></i><span><strong>Checkboxes</strong>: choose which documents to use now.</span></li>
+            <li class="flex items-start"><i class="fa-brands fa-youtube text-red-600 mr-3 mt-1"></i><span><strong>YouTube</strong>: the AI transforms the video into analysable text.</span></li>
+          </ul>
+          <div class="mt-5 p-4 rounded-2xl bg-red-50 border border-red-200">
+            <p class="text-xs font-black uppercase tracking-widest text-red-600 mb-1">Teacher's tip</p>
+            <p class="text-sm text-slate-700">Check <strong>only</strong> the sources useful for that lesson. Fewer sources = more focused answer.</p>
+          </div>
+        </div>
+        <div class="glass-card border-t-8 border-blue-500">
+          <div class="step-badge mb-5" style="background:linear-gradient(135deg,#3b82f6,#60a5fa);">2</div>
+          <h4 class="text-xl font-black mb-3 uppercase">Central zone:<br><span class="text-slate-400">Chat</span></h4>
+          <p class="text-sm text-slate-600 mb-5">Here you make requests, get answers and check citations.</p>
+          <ul class="space-y-3 text-xs font-bold text-slate-500">
+            <li class="flex items-start"><i class="fa-solid fa-keyboard text-blue-500 mr-3 mt-1"></i><span><strong>Message bar</strong>: write simple requests (e.g. "Create an assessment").</span></li>
+            <li class="flex items-start"><i class="fa-solid fa-quote-left text-blue-500 mr-3 mt-1"></i><span><strong>Citations [1]</strong>: click the numbers to see the source in the document.</span></li>
+            <li class="flex items-start"><i class="fa-solid fa-thumbtack text-blue-500 mr-3 mt-1"></i><span><strong>Save note</strong>: keep useful outputs (UDA, summaries, outlines, exercises).</span></li>
+          </ul>
+          <div class="mt-5 p-4 rounded-2xl highlight-box-blue">
+            <p class="text-xs font-black uppercase tracking-widest text-blue-700 mb-1">Quality rule</p>
+            <p class="text-sm text-slate-700">If the answer is generic: reduce checked sources or ask for a more specific format (table, list, levels).</p>
+          </div>
+        </div>
+        <div class="glass-card border-t-8 border-mendel-green">
+          <div class="step-badge mb-5" style="background:linear-gradient(135deg,#365314,#22c55e);">3</div>
+          <h4 class="text-xl font-black mb-3 uppercase">Top / right:<br><span class="text-slate-400">Study Zone</span></h4>
+          <p class="text-sm text-slate-600 mb-5">Here NotebookLM automatically produces teaching tools from the checked sources.</p>
+          <ul class="space-y-3 text-xs font-bold text-slate-500">
+            <li class="flex items-start"><i class="fa-solid fa-layer-group text-mendel-green mr-3 mt-1"></i><span><strong>Overview</strong>: reasoned overview of content.</span></li>
+            <li class="flex items-start"><i class="fa-solid fa-sitemap text-mendel-green mr-3 mt-1"></i><span><strong>Concept map</strong>: concepts and relationships (very useful for SpLD).</span></li>
+            <li class="flex items-start"><i class="fa-solid fa-chart-simple text-mendel-green mr-3 mt-1"></i><span><strong>Infographic</strong>: structured summary, quickly readable.</span></li>
+            <li class="flex items-start"><i class="fa-solid fa-question-circle text-mendel-green mr-3 mt-1"></i><span><strong>FAQ</strong>: automatic frequently asked questions (active review).</span></li>
+            <li class="flex items-start"><i class="fa-solid fa-book-open text-mendel-green mr-3 mt-1"></i><span><strong>Study guide</strong>: step-by-step path with priorities.</span></li>
+            <li class="flex items-start"><i class="fa-solid fa-table-cells text-mendel-green mr-3 mt-1"></i><span><strong>Data Table</strong>: extracts info and organises it in structured tables.</span></li>
+          </ul>
+          <div class="mt-5 p-4 rounded-2xl highlight-box">
+            <p class="text-xs font-black uppercase tracking-widest text-mendel-green mb-1">Key idea</p>
+            <p class="text-sm text-slate-700">Start from the Study Zone (orientation), then move to Chat (exercise production).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="zona-studio" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-graduation-cap"></i> Study Zone
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Study Zone: every function explained</h3>
+        <p class="text-slate-500 mt-2">Here NotebookLM transforms sources into teaching tools.</p>
+      </div>
+      <div class="grid lg:grid-cols-12 gap-8 items-start">
+        <div class="lg:col-span-7 space-y-4">
+
+          <details open>
+            <summary class="flex items-center justify-between gap-3">
+              <span class="flex items-center gap-3"><span class="step-badge" style="background:linear-gradient(135deg,#0f172a,#334155);">1</span> OVERVIEW (General overview)</span>
+              <i class="fa-solid fa-chevron-down text-slate-400"></i>
+            </summary>
+            <div class="details-body text-sm leading-relaxed space-y-4">
+              <p>The <strong>Overview</strong> is a reasoned panorama of the entire selected material. It is not a "short summary": it helps understand <strong>what the material is about</strong> and <strong>how it is organised</strong>.</p>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200"><p class="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">What it does for the teacher</p><ul class="space-y-1"><li>• quickly understand a long PDF</li><li>• decide what to explain and what to cut</li><li>• build an introduction to the lesson</li></ul></div>
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200"><p class="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Teaching value</p><ul class="space-y-1"><li>• useful for students who "get lost"</li><li>• basis for guided pre-reading</li><li>• support for interdisciplinary learning units</li></ul></div>
+              </div>
+            </div>
+          </details>
+
+          <details>
+            <summary class="flex items-center justify-between gap-3">
+              <span class="flex items-center gap-3"><span class="step-badge" style="background:linear-gradient(135deg,#365314,#22c55e);">2</span> CONCEPT MAP</span>
+              <i class="fa-solid fa-chevron-down text-slate-400"></i>
+            </summary>
+            <div class="details-body text-sm leading-relaxed space-y-4">
+              <p>The <strong>Concept map</strong> reorganises content by highlighting <strong>concepts</strong> and <strong>relationships</strong> (cause-effect, sequences, hierarchies).</p>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="p-4 rounded-2xl bg-green-50 border border-green-200"><p class="text-xs font-black uppercase tracking-widest text-green-700 mb-2">For the teacher</p><ul class="space-y-1"><li>• set up a clear explanation</li><li>• prepare oral tests and assessments</li><li>• identify critical nodes</li></ul></div>
+                <div class="p-4 rounded-2xl bg-green-50 border border-green-200"><p class="text-xs font-black uppercase tracking-widest text-green-700 mb-2">Inclusion</p><ul class="space-y-1"><li>• reduces cognitive load</li><li>• facilitates memorisation</li><li>• useful for SpLD/SEN</li></ul></div>
+              </div>
+              <div class="p-4 rounded-2xl bg-white border border-slate-200"><p class="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Tip</p><p>If the map is too long: uncheck secondary sources or work on a single paragraph.</p></div>
+            </div>
+          </details>
+
+          <details>
+            <summary class="flex items-center justify-between gap-3">
+              <span class="flex items-center gap-3"><span class="step-badge" style="background:linear-gradient(135deg,#166534,#4ade80);">3</span> INFOGRAPHIC</span>
+              <i class="fa-solid fa-chevron-down text-slate-400"></i>
+            </summary>
+            <div class="details-body text-sm leading-relaxed space-y-4">
+              <p>The <strong>Infographic</strong> is a summary organised in clear, quickly readable blocks. It is not "a pretty picture": it is an <strong>information structure</strong> ready to copy into slides or cards.</p>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200"><p class="text-xs font-black uppercase tracking-widest text-emerald-700 mb-2">For the teacher</p><ul class="space-y-1"><li>• create the final summary slide</li><li>• produce review cards</li><li>• make a dense text accessible</li></ul></div>
+                <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200"><p class="text-xs font-black uppercase tracking-widest text-emerald-700 mb-2">For students</p><ul class="space-y-1"><li>• focus on key concepts</li><li>• quick pre-assessment review</li><li>• comprehension support</li></ul></div>
+              </div>
+            </div>
+          </details>
+
+          <details>
+            <summary class="flex items-center justify-between gap-3">
+              <span class="flex items-center gap-3"><span class="step-badge" style="background:linear-gradient(135deg,#2563eb,#60a5fa);">4</span> FAQ (Frequently asked questions)</span>
+              <i class="fa-solid fa-chevron-down text-slate-400"></i>
+            </summary>
+            <div class="details-body text-sm leading-relaxed space-y-4">
+              <p>The <strong>FAQ</strong> function generates typical questions with source-based answers. Perfect for <strong>active review</strong>, remediation and oral exams.</p>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200"><p class="text-xs font-black uppercase tracking-widest text-blue-700 mb-2">For the teacher</p><ul class="space-y-1"><li>• prepare oral tests</li><li>• create comprehension exercises</li><li>• anticipate difficulties</li></ul></div>
+                <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200"><p class="text-xs font-black uppercase tracking-widest text-blue-700 mb-2">Teaching value</p><ul class="space-y-1"><li>• stimulates metacognition</li><li>• reduces study anxiety</li><li>• great for pair work</li></ul></div>
+              </div>
+              <div class="p-4 rounded-2xl bg-white border border-slate-200"><p class="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Classroom mode</p><p>Project the FAQs: students answer first, then compare with the output and the citation.</p></div>
+            </div>
+          </details>
+
+          <details>
+            <summary class="flex items-center justify-between gap-3">
+              <span class="flex items-center gap-3"><span class="step-badge" style="background:linear-gradient(135deg,#7c3aed,#c084fc);">5</span> STUDY GUIDE</span>
+              <i class="fa-solid fa-chevron-down text-slate-400"></i>
+            </summary>
+            <div class="details-body text-sm leading-relaxed space-y-4">
+              <p>The <strong>Study guide</strong> organises material into a path: what to study first, what next, what to focus on. Concrete support for students who do not know "where to start".</p>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="p-4 rounded-2xl bg-purple-50 border border-purple-200"><p class="text-xs font-black uppercase tracking-widest text-purple-700 mb-2">For the teacher</p><ul class="space-y-1"><li>• remediation and reinforcement</li><li>• summer study / make-up periods</li><li>• differentiation (basic/advanced)</li></ul></div>
+                <div class="p-4 rounded-2xl bg-purple-50 border border-purple-200"><p class="text-xs font-black uppercase tracking-widest text-purple-700 mb-2">For SEN/SpLD</p><ul class="space-y-1"><li>• reduces disorientation</li><li>• creates study routines</li><li>• helps manage time and priorities</li></ul></div>
+              </div>
+            </div>
+          </details>
+
+        </div>
+
+        <div class="lg:col-span-5 space-y-6">
+          <div class="glass-card border-t-8 border-mendel-green">
+            <h4 class="text-2xl font-black tracking-tighter">What you get (in practice)</h4>
+            <div class="mt-5 space-y-3">
+              <div class="p-4 rounded-2xl highlight-box"><p class="text-sm font-black"><i class="fa-solid fa-stopwatch text-mendel-green mr-2"></i>Time saving</p><p class="text-sm text-slate-700 mt-1">Overview + Infographic = lesson base ready faster.</p></div>
+              <div class="p-4 rounded-2xl highlight-box-blue"><p class="text-sm font-black"><i class="fa-solid fa-person-chalkboard text-blue-700 mr-2"></i>Clearer teaching</p><p class="text-sm text-slate-700 mt-1">Concept map = visible structure, especially for weaker classes.</p></div>
+              <div class="p-4 rounded-2xl highlight-box-purple"><p class="text-sm font-black"><i class="fa-solid fa-universal-access text-purple-700 mr-2"></i>Inclusion</p><p class="text-sm text-slate-700 mt-1">FAQ + Study guide = concrete support for SEN/SpLD.</p></div>
+            </div>
+          </div>
+          <div class="glass-card border-t-8 border-orange-600">
+            <h4 class="text-2xl font-black tracking-tighter">Quick checklist</h4>
+            <ol class="mt-4 text-sm text-slate-700 space-y-2 list-decimal list-inside">
+              <li>Upload 1 short PDF (2–5 pagine)</li>
+              <li>Check only that PDF</li>
+              <li>Study Zone → Overview</li>
+              <li>Study Zone → Concept map</li>
+              <li>Study Zone → FAQ</li>
+              <li>Study Zone → Study guide</li>
+              <li>Chat → assessment or exercises with citations</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="audio-video" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-indigo-50 text-indigo-700 border border-indigo-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-headphones"></i> New features
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Audio Overview & Video Overview</h3>
+        <p class="text-slate-500 mt-2 italic">Your materials become podcasts and videos explained by two virtual hosts.</p>
+      </div>
+      <div class="grid lg:grid-cols-2 gap-8 mb-8">
+        <div class="glow-card h-full flex flex-col" style="background:linear-gradient(135deg,#312e81,#4338ca,#6366f1);">
+          <div class="glow-card-inner flex-1">
+            <div class="feature-icon" style="background:linear-gradient(135deg,#312e81,#4f46e5); color:#fff;">
+              <i class="fa-solid fa-headphones"></i>
+            </div>
+            <h4 class="text-2xl font-black tracking-tighter mb-3">Audio Overview <span class="chip chip-green ml-2">Free</span></h4>
+            <p class="text-sm text-slate-700 leading-relaxed mb-5">NotebookLM automatically generates an <strong>audio dialogue</strong> between two AI hosts who discuss, explain and explore the content of uploaded sources — like a professional podcast.</p>
+            <div class="grid gap-3">
+              <div class="soft-card">
+                <p class="font-black text-sm"><i class="fa-solid fa-users text-indigo-600 mr-2"></i>Due voci: Host A e Host B</p>
+                <p class="text-xs text-slate-600 mt-1">Un host spiega, l'altro fa domande e mette alla prova i concetti. Il dialogo è naturale e coinvolgente.</p>
+              </div>
+              <div class="soft-card">
+                <p class="font-black text-sm"><i class="fa-solid fa-sliders text-indigo-600 mr-2"></i>Customisable</p>
+                <p class="text-xs text-slate-600 mt-1">Before generating, you can add instructions: "Focus on chapter 3", "Use an informal tone for high school students", "Add practical agricultural examples".</p>
+              </div>
+              <div class="soft-card">
+                <p class="font-black text-sm"><i class="fa-solid fa-mobile-screen text-indigo-600 mr-2"></i>Studying on the go</p>
+                <p class="text-xs text-slate-600 mt-1">Perfect for reviewing during commutes. Your students can listen to the material on the mobile app.</p>
+              </div>
+            </div>
+            <div class="highlight-box-purple mt-4">
+              <p class="text-xs font-black uppercase tracking-widest text-purple-700 mb-2">Recommended educational uses</p>
+              <ul class="text-sm text-slate-700 space-y-1">
+                <li>• Pre-assessment review to listen to at home</li>
+                <li>• Flipped classroom: listen first, work in class</li>
+                <li>• SpLD support: alternative to reading the text</li>
+                <li>• Material for absent students</li>
+              </ul>
+            </div>
+            <div class="copywrap mt-4">
+              <button class="copybtn" type="button" data-copy="audio-prompt"><i class="fa-solid fa-copy"></i> Copia</button>
+              <pre id="audio-prompt">"Create an audio overview with an engaging tone for 10th-grade students. Have Host A explain the phases of the nitrogen cycle with practical farming examples, and have Host B ask questions to test understanding."</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="glow-card glow-card-blue h-full flex flex-col">
+          <div class="glow-card-inner flex-1">
+            <div class="feature-icon" style="background:linear-gradient(135deg,#7f1d1d,#dc2626); color:#fff;">
+              <i class="fa-solid fa-video"></i>
+            </div>
+            <h4 class="text-2xl font-black tracking-tighter mb-3">Video Overview <span class="chip chip-orange ml-2">Plus/Workspace</span></h4>
+            <p class="text-sm text-slate-700 leading-relaxed mb-5">A <strong>video</strong> version of the audio overview: the two virtual hosts appear on screen with slides and animations, building a full explanatory video.</p>
+            <div class="grid gap-3">
+              <div class="soft-card">
+                <p class="font-black text-sm"><i class="fa-solid fa-film text-red-600 mr-2"></i>Video with automatic slides</p>
+                <p class="text-xs text-slate-600 mt-1">NotebookLM generates the accompanying slides based on source content. No PowerPoint needed.</p>
+              </div>
+              <div class="soft-card">
+                <p class="font-black text-sm"><i class="fa-solid fa-language text-red-600 mr-2"></i>Multilingual</p>
+                <p class="text-xs text-slate-600 mt-1">You can specify the video language — useful for classes with foreign students or for Technical English lessons.</p>
+              </div>
+              <div class="soft-card">
+                <p class="font-black text-sm"><i class="fa-solid fa-share-nodes text-red-600 mr-2"></i>Shareable</p>
+                <p class="text-xs text-slate-600 mt-1">The video can be shared with students as if it were YouTube content. Great for the Electronic Register.</p>
+              </div>
+            </div>
+            <div class="highlight-box-orange mt-4">
+              <p class="text-xs font-black uppercase tracking-widest text-orange-700 mb-2">Difference compared to Audio</p>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs border-separate" style="border-spacing:0;">
+                  <thead><tr>
+                    <th class="p-2 bg-white/60 border border-white/40 rounded-tl-xl text-left">Audio Overview</th>
+                    <th class="p-2 bg-white/60 border border-white/40 rounded-tr-xl text-left">Video Overview</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr><td class="p-2 border border-white/30 text-slate-700">Free</td><td class="p-2 border border-white/30 text-slate-700">Plus/Workspace</td></tr>
+                    <tr><td class="p-2 border border-white/30 text-slate-700">Audio only (mp3)</td><td class="p-2 border border-white/30 text-slate-700">Audio + animated slides</td></tr>
+                    <tr><td class="p-2 border border-white/30 rounded-bl-xl text-slate-700">Perfect for mobile app</td><td class="p-2 border border-white/30 rounded-br-xl text-slate-700">Perfect for classroom projection</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card border-t-8 border-indigo-600">
+        <h4 class="text-xl font-black tracking-tighter mb-4"><i class="fa-solid fa-lightbulb text-amber-500 mr-2"></i>Practical tips for Audio and Video Overview</h4>
+        <div class="grid md:grid-cols-3 gap-4 text-sm">
+          <div class="soft-card">
+            <p class="font-black mb-2 text-green-700"><i class="fa-solid fa-check mr-1"></i> Use few targeted sources</p>
+            <p class="text-slate-600">An overview generated from 1–2 sources is more focused and useful than one from 10 different sources.</p>
+          </div>
+          <div class="soft-card">
+            <p class="font-black mb-2 text-blue-700"><i class="fa-solid fa-pen-to-square mr-1"></i> Always customise</p>
+            <p class="text-slate-600">Click the pencil icon before generating and specify: class level, topics to emphasise, desired tone.</p>
+          </div>
+          <div class="soft-card">
+            <p class="font-black mb-2 text-purple-700"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Always check</p>
+            <p class="text-slate-600">Listen to/watch the result before sharing it: content is anchored to sources but a quick review is always recommended.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="presentazioni" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-desktop"></i> Presentations
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Creating Presentations</h3>
+        <p class="text-slate-500 mt-2">Complete slides directly from your sources.</p>
+      </div>
+      <div class="grid lg:grid-cols-2 gap-8 mb-8">
+        <div class="glass-card border-t-8 border-mendel-green">
+          <div class="flex items-start gap-4">
+            <div class="step-badge" style="background:linear-gradient(135deg,#365314,#22c55e);">1</div>
+            <div>
+              <h4 class="text-2xl font-black tracking-tighter mb-2">Access and customisation</h4>
+              <p class="text-sm text-slate-600 leading-relaxed">Do not generate immediately with the default. Use the <strong>"pencil" (edit) icon</strong> to customise the output before generating. You will get much better results.</p>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card border-t-8 border-blue-600">
+          <div class="flex items-start gap-4">
+            <div class="step-badge" style="background:linear-gradient(135deg,#2563eb,#60a5fa);">2</div>
+            <div>
+              <h4 class="text-2xl font-black tracking-tighter mb-2">Configurable parameters</h4>
+              <ul class="text-sm text-slate-600 space-y-2 mt-2">
+                <li>• <strong>Language:</strong> specify English (or another language)</li>
+                <li>• <strong>Length:</strong> desired number of slides</li>
+                <li>• <strong>Style:</strong> formal, narrative, visual-first</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card border-t-8 border-purple-600">
+          <div class="flex items-start gap-4">
+            <div class="step-badge" style="background:linear-gradient(135deg,#9333ea,#c084fc);">3</div>
+            <div>
+              <h4 class="text-2xl font-black tracking-tighter mb-2">The importance of the Prompt</h4>
+              <ul class="text-sm text-slate-600 space-y-2 mt-2">
+                <li>• <strong>Target:</strong> intended audience (class, age)</li>
+                <li>• <strong>Goal:</strong> introduction, review, assessment</li>
+                <li>• <strong>Structure:</strong> number of slides, sections</li>
+                <li>• <strong>Visual style:</strong> dominant colours</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card border-t-8 border-orange-500">
+          <div class="flex items-start gap-4">
+            <div class="step-badge" style="background:linear-gradient(135deg,#f97316,#fbbf24);">4</div>
+            <div>
+              <h4 class="text-2xl font-black tracking-tighter mb-2">Generated output</h4>
+              <ul class="text-sm text-slate-600 space-y-2 mt-2">
+                <li>• <strong>AI images:</strong> evocative and high quality</li>
+                <li>• <strong>Discussion questions</strong> for the class</li>
+                <li>• <strong>Source adherence</strong> with references</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="glass-card border-t-8 border-slate-200 bg-slate-50">
+        <h4 class="text-xl font-black mb-3"><i class="fa-solid fa-circle-info text-blue-600 mr-2"></i> Note on Infographics</h4>
+        <p class="text-sm text-slate-700 mb-4">The text within infographics is not directly editable in NotebookLM.</p>
+        <div class="p-4 bg-white border border-slate-200 rounded-xl">
+          <p class="text-sm text-slate-700"><strong>💡 Solution:</strong> Download the file and import it into <strong>Canva</strong> to correct typos or customise colours.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="deep-research" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-amber-50 text-amber-700 border border-amber-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-magnifying-glass"></i> Advanced feature
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Deep Research</h3>
+        <p class="text-slate-500 mt-2 italic">NotebookLM searches the web for you and builds a reliable source.</p>
+      </div>
+      <div class="glow-card glow-card-orange">
+        <div class="glow-card-inner">
+
+          <div class="mb-8 p-5 rounded-3xl" style="background:linear-gradient(135deg,#0f172a,#1e293b); color:#fff;">
+            <p class="text-xs font-black uppercase tracking-widest text-amber-400 mb-3"><i class="fa-solid fa-map-pin mr-2"></i>How to get there — exact path in the interface</p>
+            <div class="flex flex-wrap items-center gap-2 text-sm font-bold">
+              <span class="px-3 py-1.5 rounded-xl bg-white/10 border border-white/20">Left column <strong>Sources</strong></span>
+              <i class="fa-solid fa-arrow-right text-amber-400"></i>
+              <span class="px-3 py-1.5 rounded-xl bg-white/10 border border-white/20">Field <strong>"Search new sources on the web"</strong></span>
+              <i class="fa-solid fa-arrow-right text-amber-400"></i>
+              <span class="px-3 py-1.5 rounded-xl bg-white/10 border border-white/20">Button <strong>🌐 Web</strong></span>
+              <i class="fa-solid fa-arrow-right text-amber-400"></i>
+              <span class="px-3 py-1.5 rounded-xl bg-amber-500/30 border border-amber-400/50 text-amber-300">Arrow ▼ next to <strong>"Quick search"</strong></span>
+            </div>
+            <p class="text-xs text-slate-400 mt-3"><i class="fa-solid fa-circle-info mr-1"></i> The dropdown menu shows two options: <strong>Quick search</strong> (Fast Research) and <strong>In-depth search</strong> (Deep Research). It is not a separate button — it is hidden in the dropdown!</p>
+          </div>
+
+          <div class="grid lg:grid-cols-2 gap-8">
+            <div>
+              <h4 class="text-2xl font-black tracking-tighter mb-4">What is Deep Research</h4>
+              <p class="text-sm text-slate-700 leading-relaxed mb-5">When you have no available materials on a topic, you can activate <strong>Deep Research</strong>: NotebookLM sends intelligent agents onto the web, analyses <strong>hundreds of sources</strong>, synthesises them and creates a structured report that automatically becomes a source in your notebook.</p>
+              <div class="space-y-3">
+                <div class="soft-card">
+                  <p class="font-black text-sm"><i class="fa-solid fa-robot text-orange-600 mr-2"></i>Autonomous agents</p>
+                  <p class="text-xs text-slate-600 mt-1">The agents browse the web, assess source reliability and collect only relevant information.</p>
+                </div>
+                <div class="soft-card">
+                  <p class="font-black text-sm"><i class="fa-solid fa-file-lines text-orange-600 mr-2"></i>Report as source</p>
+                  <p class="text-xs text-slate-600 mt-1">The result is automatically added as a source in the notebook, ready to be used with all other tools.</p>
+                </div>
+                <div class="soft-card">
+                  <p class="font-black text-sm"><i class="fa-solid fa-link text-orange-600 mr-2"></i>Web citations</p>
+                  <p class="text-xs text-slate-600 mt-1">Every piece of information in the report is tracked with a link to the original source — no hallucinations.</p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 class="text-2xl font-black tracking-tighter mb-4">When to use it (school)</h4>
+              <div class="space-y-3">
+                <div class="highlight-box">
+                  <p class="font-black text-sm mb-1"><i class="fa-solid fa-seedling text-mendel-green mr-2"></i>Regulatory updates</p>
+                  <p class="text-xs text-slate-700">Are you preparing a lesson on a recent CAP or environmental regulation? Deep Research finds the latest circulars and makes them available as a source.</p>
+                </div>
+                <div class="highlight-box-blue">
+                  <p class="font-black text-sm mb-1"><i class="fa-solid fa-newspaper text-blue-700 mr-2"></i>Current events for Civic Education</p>
+                  <p class="text-xs text-slate-700">For learning units on topics like sustainability, food security or climate change: search for recent articles and build a reliable source.</p>
+                </div>
+                <div class="highlight-box-purple">
+                  <p class="font-black text-sm mb-1"><i class="fa-solid fa-flask text-purple-700 mr-2"></i>Technical insights</p>
+                  <p class="text-xs text-slate-700">Drip irrigation techniques, new crop varieties, phytosanitary treatments: get an updated report without searching manually.</p>
+                </div>
+                <div class="highlight-box-orange">
+                  <p class="font-black text-sm mb-1"><i class="fa-solid fa-triangle-exclamation text-orange-700 mr-2"></i>Warning</p>
+                  <p class="text-xs text-slate-700">Always review the report before using it with students. Web sources can vary in reliability — your professional oversight remains indispensable.</p>
+                </div>
+              </div>
+              <div class="copywrap mt-4">
+                <button class="copybtn" type="button" data-copy="deep-research-prompt"><i class="fa-solid fa-copy"></i> Copia</button>
+                <pre id="deep-research-prompt">"Use Deep Research to find updated information on Italian legislation on agricultural waste management. Create a report with: regulatory context, main obligations, penalties, and 3 practical examples for a small farm."</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tabella-dati" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-table-cells"></i> Data structuring
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">"Data Table" Feature</h3>
+        <p class="text-slate-500 mt-2">Transforms scattered information into structured data.</p>
+      </div>
+      <div class="max-w-5xl mx-auto">
+        <div class="glass-card border-t-8 border-mendel-green">
+          <div class="flex items-start gap-4">
+            <div class="step-badge" style="background:linear-gradient(135deg,#365314,#22c55e);"><i class="fa-solid fa-table-cells"></i></div>
+            <div class="w-full">
+              <h4 class="text-2xl font-black tracking-tighter mb-4">What it is and what it does</h4>
+              <p class="text-slate-700 leading-relaxed mb-6">The <strong>"Data Table"</strong> function transforms discursive, scattered or disorganised information into a logical row-and-column format — ready to be exported to Excel or Google Sheets.</p>
+              <div class="grid md:grid-cols-2 gap-4 mb-6">
+                <div class="soft-card"><div class="flex items-start gap-3"><div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-search text-blue-600"></i></div><div><p class="font-black text-slate-900 mb-1">1. Targeted extraction</p><p class="text-sm text-slate-600">Isolates specific data hidden in long documents (manuals, regulations) and groups them in a single view.</p></div></div></div>
+                <div class="soft-card"><div class="flex items-start gap-3"><div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-code-compare text-purple-600"></i></div><div><p class="font-black text-slate-900 mb-1">2. Comparison</p><p class="text-sm text-slate-600">Compares multiple elements by crossing variables: pros/cons, characteristics, time deadlines.</p></div></div></div>
+                <div class="soft-card"><div class="flex items-start gap-3"><div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-book text-green-600"></i></div><div><p class="font-black text-slate-900 mb-1">3. Glossaries and outlines</p><p class="text-sm text-slate-600">Automatically generates term lists with definitions, translations or technical characteristics.</p></div></div></div>
+                <div class="soft-card"><div class="flex items-start gap-3"><div class="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-download text-orange-600"></i></div><div><p class="font-black text-slate-900 mb-1">4. Export</p><p class="text-sm text-slate-600">Output ready for Google Sheets or Microsoft Excel for further processing.</p></div></div></div>
+              </div>
+              <div class="p-5 rounded-3xl highlight-box-blue">
+                <p class="text-xs font-black uppercase tracking-widest text-blue-700 mb-2"><i class="fa-solid fa-lightbulb mr-2"></i>How to activate it</p>
+                <p class="text-sm text-slate-700 mb-3">Specify the desired columns in the chat box:</p>
+                <div class="copywrap">
+                  <button class="copybtn" type="button" data-copy="tabella-esempio"><i class="fa-solid fa-copy"></i> Copia</button>
+                  <pre id="tabella-esempio">"Extract all procedures cited in the documents and create a table divided into: Procedure name, Main phases, Necessary tools"</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="template-prompt" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-terminal"></i> Templates
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Universal prompt templates (3 levels)</h3>
+        <p class="text-slate-500 mt-2">To copy and paste in chat. Only change the topic/objective.</p>
+      </div>
+      <div class="grid lg:grid-cols-3 gap-8">
+        <div class="glass-card border-t-8 border-slate-900">
+          <div class="flex items-start gap-4">
+            <div class="step-badge" style="background:linear-gradient(135deg,#0f172a,#334155);">Base</div>
+            <div class="w-full">
+              <p class="font-black">Clear summary + keywords</p>
+              <p class="text-sm text-slate-600 mt-1">Perfect for explaining and reviewing.</p>
+              <div class="copywrap mt-4"><button class="copybtn" type="button" data-copy="pb"><i class="fa-solid fa-copy"></i> Copia</button><pre id="pb">"Summarise the checked sources in 8–12 key points. Then create a list of 10 keywords with a brief definition, citing the sources."</pre></div>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card border-t-8 border-blue-600">
+          <div class="flex items-start gap-4">
+            <div class="step-badge" style="background:linear-gradient(135deg,#2563eb,#60a5fa);">Medio</div>
+            <div class="w-full">
+              <p class="font-black">Quiz with solutions + citations</p>
+              <p class="text-sm text-slate-600 mt-1">Ready for formative assessment.</p>
+              <div class="copywrap mt-4"><button class="copybtn" type="button" data-copy="pm"><i class="fa-solid fa-copy"></i> Copia</button><pre id="pm">"Generate a quiz on these sources: 8 multiple choice questions + 4 true/false. Provide solutions and, for each answer, cite the source (page/paragraph if available)."</pre></div>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card border-t-8 border-mendel-green">
+          <div class="flex items-start gap-4">
+            <div class="step-badge" style="background:linear-gradient(135deg,#365314,#22c55e);">Avanz.</div>
+            <div class="w-full">
+              <p class="font-black">Learning unit / authentic task + rubric</p>
+              <p class="text-sm text-slate-600 mt-1">For structured teaching design.</p>
+              <div class="copywrap mt-4"><button class="copybtn" type="button" data-copy="pa"><i class="fa-solid fa-copy"></i> Copia</button><pre id="pa">"Design an activity (authentic task) based only on these sources: objectives, brief, phases, materials, timing, final product. Include an assessment rubric (4 levels) and cite the sources used."</pre></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="prompt" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-bolt"></i> By subject
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Prompt guide by subject</h3>
+        <p class="text-slate-500 mt-2">Based on the IIS Mendel PTOF curriculum. Copy and paste in chat.</p>
+      </div>
+
+      <div class="mb-10">
+        <h4 class="category-title"><i class="fa-solid fa-language text-blue-600"></i> Language Arts</h4>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="prompt-card" style="border-left-color:#3b82f6;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">Italian Literature</p><p class="text-sm italic">"Analyse the theme of nature in Pascoli using the uploaded texts and compare it with the agricultural realism of Verga."</p></div>
+          <div class="prompt-card" style="border-left-color:#3b82f6;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">Technical English</p><p class="text-sm italic">"Create a bilingual (EN-IT) vocabulary list focused on 'Hydroponic Cultivation' based on the PDF manual."</p></div>
+          <div class="prompt-card" style="border-left-color:#3b82f6;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">History</p><p class="text-sm italic">"Extract the key passages on post-war Italian agricultural mechanisation cited in my handouts."</p></div>
+        </div>
+      </div>
+
+      <div class="mb-10">
+        <h4 class="category-title"><i class="fa-solid fa-flask-vial text-purple-600"></i> Science and Maths</h4>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="prompt-card" style="border-left-color:#a855f7;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">Mathematics</p><p class="text-sm italic">"Extract the data present in the sources and create 5 exercises (with solutions) on averages, percentages and graphs."</p></div>
+          <div class="prompt-card" style="border-left-color:#a855f7;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">Agricultural Chemistry</p><p class="text-sm italic">"Explain the influence of pH on nitrogen bioavailability in soil based on the checked sources, in simplified form for SEN students."</p></div>
+          <div class="prompt-card" style="border-left-color:#a855f7;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">Biology / Physics</p><p class="text-sm italic">"Summarise the phases of photosynthesis in a table: 'phase' and 'what happens', citing the sources."</p></div>
+        </div>
+      </div>
+
+      <div class="mb-10">
+        <h4 class="category-title"><i class="fa-solid fa-wheat-awn text-mendel-green"></i> Technical-Agricultural Area</h4>
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="prompt-card" style="border-left-color:#365314;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">Agronomy / Crop</p><p class="text-sm italic text-xs">"Summarise the protocols present in the sources in 5 key points and create 5 assessment questions."</p></div>
+          <div class="prompt-card" style="border-left-color:#365314;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">Animal Husbandry</p><p class="text-sm italic text-xs">"List welfare/distress signals cited in the sources and propose an observation form for students."</p></div>
+          <div class="prompt-card" style="border-left-color:#365314;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">Land Appraisal / Law</p><p class="text-sm italic text-xs">"Create a synthetic estimation guide based on the criteria present in the checked sources, with an example."</p></div>
+          <div class="prompt-card" style="border-left-color:#365314;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">Rural Engineering</p><p class="text-sm italic text-xs">"Extract the technical parameters and transform them into an operational checklist (with citations)."</p></div>
+        </div>
+      </div>
+
+      <div class="mb-10">
+        <h4 class="category-title"><i class="fa-solid fa-briefcase text-orange-600"></i> Senior Year</h4>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="prompt-card" style="border-left-color:#f97316;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">Product Valorisation</p><p class="text-sm italic">"Summarise the certifications cited in the sources and create 8 true/false questions with corrections and citations."</p></div>
+          <div class="prompt-card" style="border-left-color:#f97316;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">Ecology / Pedology</p><p class="text-sm italic">"Organise in a table: 'technique', 'advantages', 'limitations' based on the checked sources."</p></div>
+          <div class="prompt-card" style="border-left-color:#f97316;"><p class="text-[10px] font-black text-slate-400 mb-2 uppercase">Processing</p><p class="text-sm italic">"Explain the process phases from the sources and generate an assessment: 6 multiple choice + 4 open-ended, with solutions and citations."</p></div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <h4 class="category-title"><i class="fa-solid fa-star-of-life text-red-600"></i> Work-based Learning / Civic Ed.</h4>
+        <div class="grid md:grid-cols-2 gap-8">
+          <div class="prompt-card" style="border-left-color:#dc2626; background:#fef2f2;"><p class="text-[10px] font-black text-red-600 mb-2 uppercase">PCTO / Report</p><p class="text-sm font-bold mb-2 italic">"Analyse the uploaded logbooks and write a concise report on the skills acquired, with examples and citations."</p><p class="text-[10px] text-slate-400">Ideal for the final report and State Exam.</p></div>
+          <div class="prompt-card" style="border-left-color:#16a34a; background:#f0fdf4;"><p class="text-[10px] font-black text-green-600 mb-2 uppercase">Civic Education</p><p class="text-sm font-bold mb-2 italic">"Link sustainability and regulations present in the sources, creating 3 debate questions and 1 authentic task."</p><p class="text-[10px] text-slate-400">Perfect for cross-curricular learning units.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ricette" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-utensils"></i> Teaching recipes
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Ready-to-use teaching recipes</h3>
+        <p class="text-slate-500 mt-2">Each recipe: goal → sources → Study Zone → chat prompt.</p>
+      </div>
+      <div class="grid lg:grid-cols-3 gap-8">
+        <div class="glass-card border-t-8 border-blue-600">
+          <p class="text-xs font-black uppercase tracking-widest text-blue-700 mb-2">Example 1</p>
+          <h4 class="text-2xl font-black tracking-tighter">Lesson ready in 20 minutes</h4>
+          <ul class="text-sm text-slate-700 mt-3 space-y-2">
+            <li><strong>Goal:</strong> clear explanation + final outline</li>
+            <li><strong>Sources:</strong> 1 PDF chapter (checked)</li>
+            <li><strong>Study Zone:</strong> Overview → Infographic</li>
+            <li><strong>Chat:</strong> outline + examples</li>
+          </ul>
+          <div class="copywrap mt-4"><button class="copybtn" type="button" data-copy="r1"><i class="fa-solid fa-copy"></i> Copia</button><pre id="r1">"Create a lesson outline (10–12 minutes explanation + 8 minutes activity + 3 minutes quick check) based ONLY on the checked sources. Include examples and citations."</pre></div>
+        </div>
+        <div class="glass-card border-t-8 border-purple-600">
+          <p class="text-xs font-black uppercase tracking-widest text-purple-700 mb-2">Example 2</p>
+          <h4 class="text-2xl font-black tracking-tighter">Assessment with marking scheme</h4>
+          <ul class="text-sm text-slate-700 mt-3 space-y-2">
+            <li><strong>Goal:</strong> assessment consistent with sources</li>
+            <li><strong>Sources:</strong> chapter + worksheet (checked)</li>
+            <li><strong>Study Zone:</strong> FAQ</li>
+            <li><strong>Chat:</strong> quiz + solutions</li>
+          </ul>
+          <div class="copywrap mt-4"><button class="copybtn" type="button" data-copy="r2"><i class="fa-solid fa-copy"></i> Copia</button><pre id="r2">"Generate an assessment on these sources: 8 multiple choice + 4 short open-ended. Provide solutions and, for each answer, indicate the citation (page/paragraph if available)."</pre></div>
+        </div>
+        <div class="glass-card border-t-8 border-mendel-green">
+          <p class="text-xs font-black uppercase tracking-widest text-mendel-green mb-2">Esempio 3</p>
+          <h4 class="text-2xl font-black tracking-tighter">Inclusion SEN/SpLD</h4>
+          <ul class="text-sm text-slate-700 mt-3 space-y-2">
+            <li><strong>Obiettivo:</strong> semplificazione + guida studio</li>
+            <li><strong>Sources:</strong> chapter portion (checked)</li>
+            <li><strong>Study Zone:</strong> Map → Study guide</li>
+            <li><strong>Chat:</strong> simplified version + questions</li>
+          </ul>
+          <div class="copywrap mt-4"><button class="copybtn" type="button" data-copy="r3"><i class="fa-solid fa-copy"></i> Copia</button><pre id="r3">"Rewrite this content in a simplified version (short sentences). Then create: 10 keywords with definitions + 10 graded questions (easy→medium) with solutions and citations."</pre></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="mobile" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-blue-50 text-blue-700 border border-blue-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-mobile-screen"></i> Mobile app
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">NotebookLM on smartphone</h3>
+        <p class="text-slate-500 mt-2 italic">Study and review anywhere, even offline (with download).</p>
+      </div>
+      <div class="glow-card glow-card-blue">
+        <div class="glow-card-inner">
+          <div class="grid lg:grid-cols-2 gap-10">
+            <div>
+              <div class="feature-icon" style="background:linear-gradient(135deg,#2563eb,#60a5fa);color:#fff;"><i class="fa-solid fa-mobile-screen-button"></i></div>
+              <h4 class="text-2xl font-black tracking-tighter mb-4">The app for iOS and Android</h4>
+              <p class="text-sm text-slate-700 mb-5">NotebookLM is available as a native app for smartphones and tablets. All notebooks created on the web are automatically synchronised.</p>
+              <div class="space-y-3">
+                <div class="soft-card"><p class="font-black text-sm"><i class="fa-solid fa-cards-blank text-blue-600 mr-2"></i>Automatic flashcards</p><p class="text-xs text-slate-600 mt-1">NotebookLM generates flashcards from the uploaded material, with the question on the front and the answer on the back. Perfect for independent student study.</p></div>
+                <div class="soft-card"><p class="font-black text-sm"><i class="fa-solid fa-circle-question text-blue-600 mr-2"></i>Interactive quizzes</p><p class="text-xs text-slate-600 mt-1">Automatically generated multiple-choice quizzes, with immediate feedback and source reference.</p></div>
+                <div class="soft-card"><p class="font-black text-sm"><i class="fa-solid fa-headphones text-blue-600 mr-2"></i>Audio Overview offline</p><p class="text-xs text-slate-600 mt-1">Download the audio to listen without a connection — ideal during the bus or train journey.</p></div>
+              </div>
+            </div>
+            <div>
+              <h4 class="text-2xl font-black tracking-tighter mb-4">How to share it with students</h4>
+              <div class="space-y-3">
+                <div class="highlight-box">
+                  <p class="font-black text-sm mb-1">Step 1 — Create the notebook</p>
+                  <p class="text-xs text-slate-700">Prepare the notebook with the sources for your subject. Add all the Study Zone features.</p>
+                </div>
+                <div class="highlight-box-blue">
+                  <p class="font-black text-sm mb-1">Step 2 — Set as "Viewer"</p>
+                  <p class="text-xs text-slate-700">In the sharing settings, choose "Viewer". Students will be able to ask questions but not modify the sources.</p>
+                </div>
+                <div class="highlight-box-purple">
+                  <p class="font-black text-sm mb-1">Step 3 — Share the link</p>
+                  <p class="text-xs text-slate-700">Paste the link in the electronic register, in Classroom or in chat. Students open the notebook with the app.</p>
+                </div>
+                <div class="highlight-box-orange">
+                  <p class="font-black text-sm mb-1">What students see</p>
+                  <p class="text-xs text-slate-700">They see the chat, the study zone (flashcards, quiz, map) and the audio overview. <strong>They do not see the original files</strong>.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="condivisione" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-share-nodes"></i> Sharing
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Sharing and Collaborating</h3>
+        <p class="text-slate-500 mt-2 italic">Your notebook as a personalised chatbot for your students.</p>
+      </div>
+      <div class="grid lg:grid-cols-3 gap-8">
+        <div class="glass-card border-t-8 border-mendel-green">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#365314,#22c55e); color:#fff;"><i class="fa-solid fa-eye"></i></div>
+          <h4 class="text-xl font-black tracking-tighter mb-3">Viewer Mode</h4>
+          <p class="text-sm text-slate-700 leading-relaxed">Invited users can <strong>ask the notebook questions</strong> as if it were a chatbot, but cannot modify sources, add materials or see original files.</p>
+          <div class="highlight-box mt-4">
+            <p class="text-xs font-black uppercase tracking-widest text-mendel-green mb-1">Ideal for</p>
+            <p class="text-xs text-slate-700">Independent student review, peer-to-peer tutoring, parent access to course materials.</p>
+          </div>
+        </div>
+        <div class="glass-card border-t-8 border-blue-600">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#2563eb,#60a5fa); color:#fff;"><i class="fa-users fa-solid"></i></div>
+          <h4 class="text-xl font-black tracking-tighter mb-3">Collaborator Mode</h4>
+          <p class="text-sm text-slate-700 leading-relaxed">Collaborators can <strong>add sources and create notes</strong>. Useful for teacher teams working on the same learning unit or for interdisciplinary projects.</p>
+          <div class="highlight-box-blue mt-4">
+            <p class="text-xs font-black uppercase tracking-widest text-blue-700 mb-1">Ideal for</p>
+            <p class="text-xs text-slate-700">Subject departments, shared planning, collegial construction of teaching materials.</p>
+          </div>
+        </div>
+        <div class="glass-card border-t-8 border-purple-600">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#7c3aed,#c084fc); color:#fff;"><i class="fa-solid fa-robot"></i></div>
+          <h4 class="text-xl font-black tracking-tighter mb-3">Your personalised Chatbot</h4>
+          <p class="text-sm text-slate-700 leading-relaxed">A notebook shared in viewer mode works exactly like an <strong>expert chatbot</strong> on your subject. Students ask questions and receive cited and verified answers.</p>
+          <div class="highlight-box-purple mt-4">
+            <p class="text-xs font-black uppercase tracking-widest text-purple-700 mb-1">Practical example</p>
+            <p class="text-xs text-slate-700">"I created a notebook with all the Agricultural Chemistry notes and shared it with the class. Students use it to review before the oral test."</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="errori" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-red-50 text-red-700 border border-red-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-triangle-exclamation"></i> Troubleshooting
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Common problems and solutions</h3>
+        <p class="text-slate-500 mt-2">Before thinking "it does not work", check these points.</p>
+      </div>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div class="glass-card border-t-8 border-red-600">
+          <h4 class="text-2xl font-black tracking-tighter mb-3"><i class="fa-solid fa-comment-slash text-red-500 mr-2"></i>Answers too generic</h4>
+          <ul class="text-sm text-slate-700 space-y-2">
+            <li>• reduce checked sources</li>
+            <li>• request a format (table / list / levels)</li>
+            <li>• narrow the topic (chapter/paragraph)</li>
+          </ul>
+        </div>
+        <div class="glass-card border-t-8 border-orange-600">
+          <h4 class="text-2xl font-black tracking-tighter mb-3"><i class="fa-solid fa-quote-left text-orange-500 mr-2"></i>Missing citations</h4>
+          <ul class="text-sm text-slate-700 space-y-2">
+            <li>• verify the PDF is selectable text (not a scan)</li>
+            <li>• upload a "text" version of the document</li>
+            <li>• limit sources and try again</li>
+          </ul>
+        </div>
+        <div class="glass-card border-t-8 border-blue-600">
+          <h4 class="text-2xl font-black tracking-tighter mb-3"><i class="fa-solid fa-code-merge text-blue-500 mr-2"></i>Confused / contradictory results</h4>
+          <ul class="text-sm text-slate-700 space-y-2">
+            <li>• you have sources with different definitions: separate them</li>
+            <li>• work "in blocks": one source at a time</li>
+            <li>• use Overview first to understand what is inside</li>
+          </ul>
+        </div>
+        <div class="glass-card border-t-8 border-mendel-green">
+          <h4 class="text-2xl font-black tracking-tighter mb-3"><i class="fa-solid fa-clock text-mendel-green mr-2"></i>Too much time spent writing</h4>
+          <ul class="text-sm text-slate-700 space-y-2">
+            <li>• start from the Study Zone (automatic outputs)</li>
+            <li>• use the universal prompt templates (section above)</li>
+            <li>• save the best answers as reusable notes</li>
+          </ul>
+        </div>
+        <div class="glass-card border-t-8 border-purple-600">
+          <h4 class="text-2xl font-black tracking-tighter mb-3"><i class="fa-solid fa-file-pdf text-purple-500 mr-2"></i>PDF not loading</h4>
+          <ul class="text-sm text-slate-700 space-y-2">
+            <li>• maximum size: 200 MB per file</li>
+            <li>• scanned PDFs (images) may not be read correctly</li>
+            <li>• try converting the PDF with Adobe or an OCR tool</li>
+            <li>• alternatively paste the text directly into the chat</li>
+          </ul>
+        </div>
+        <div class="glass-card border-t-8 border-amber-500">
+          <h4 class="text-2xl font-black tracking-tighter mb-3"><i class="fa-solid fa-headphones text-amber-500 mr-2"></i>Audio Overview in the wrong language</h4>
+          <ul class="text-sm text-slate-700 space-y-2">
+            <li>• the audio language follows the language of uploaded sources</li>
+            <li>• for English: upload sources in English</li>
+            <li>• specify the language in the instructions before generating</li>
+            <li>• if mixed: the predominant language wins</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="inclusione" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-green-50 text-mendel-green border border-green-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-universal-access"></i> Inclusion
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Inclusion SEN/SpLD: uso operativo</h3>
+        <p class="text-slate-500 mt-2">Ready tools and prompts to reduce cognitive load and increase autonomy.</p>
+      </div>
+      <div class="grid lg:grid-cols-2 gap-8">
+        <div class="glass-card border-t-8 border-mendel-green">
+          <h4 class="text-2xl font-black tracking-tighter">"Guided study" package</h4>
+          <ul class="text-sm text-slate-700 mt-3 space-y-2">
+            <li><strong>1)</strong> Study Zone → Overview (orientamento)</li>
+            <li><strong>2)</strong> Study Zone → Concept map (struttura)</li>
+            <li><strong>3)</strong> Study Zone → Study guide (priorità)</li>
+            <li><strong>4)</strong> Chat → simplification + graded questions</li>
+          </ul>
+          <div class="copywrap mt-5">
+            <button class="copybtn" type="button" data-copy="bes1"><i class="fa-solid fa-copy"></i> Copia</button>
+            <pre id="bes1">"Create a simplified version of the content (short sentences, essential vocabulary). Then produce: (a) keyword list with definitions, (b) 10 graded comprehension questions with solutions, (c) mini review sheet in 6 points, citing the sources."</pre>
+          </div>
+        </div>
+        <div class="glass-card border-t-8 border-blue-600">
+          <h4 class="text-2xl font-black tracking-tighter">Three recommended "educational" outputs</h4>
+          <div class="grid gap-4 mt-4">
+            <div class="p-4 rounded-2xl highlight-box-blue"><p class="font-black text-slate-900">1) Two-column table</p><p class="text-sm text-slate-700 mt-1">Concept → brief explanation (with examples).</p></div>
+            <div class="p-4 rounded-2xl highlight-box-blue"><p class="font-black text-slate-900">2) 5-step sequence</p><p class="text-sm text-slate-700 mt-1">Processes/procedures: "first… then… therefore…".</p></div>
+            <div class="p-4 rounded-2xl highlight-box-blue"><p class="font-black text-slate-900">3) Questions "easy → medium"</p><p class="text-sm text-slate-700 mt-1">Builds confidence and method, not just assessment.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="privacy" class="anchor mb-20 reveal">
+      <div class="text-center mb-14">
+        <div class="section-tag bg-slate-100 text-slate-700 border border-slate-200 mb-4 mx-auto w-fit">
+          <i class="fa-solid fa-shield-halved"></i> Privacy
+        </div>
+        <h3 class="text-4xl font-black tracking-tighter">Privacy and good practices</h3>
+        <p class="text-slate-500 mt-2">Two clear rules to work safely and with protection.</p>
+      </div>
+      <div class="grid lg:grid-cols-2 gap-8">
+        <div class="glass-card border-t-8 border-slate-900">
+          <h4 class="text-2xl font-black tracking-tighter mb-4"><i class="fa-solid fa-ban text-red-500 mr-2"></i>What to avoid</h4>
+          <ul class="text-sm text-slate-700 space-y-3">
+            <li class="flex items-start gap-2"><span class="chip chip-red">✕</span> Do not upload personal student data</li>
+            <li class="flex items-start gap-2"><span class="chip chip-red">✕</span> Do not upload unnecessary sensitive documents</li>
+            <li class="flex items-start gap-2"><span class="chip chip-red">✕</span> Avoid materials with unmanaged copyright</li>
+            <li class="flex items-start gap-2"><span class="chip chip-red">✕</span> Do not share your Google account credentials</li>
+          </ul>
+        </div>
+        <div class="glass-card border-t-8 border-mendel-green">
+          <h4 class="text-2xl font-black tracking-tighter mb-4"><i class="fa-solid fa-check text-green-600 mr-2"></i>What to prefer</h4>
+          <ul class="text-sm text-slate-700 space-y-3">
+            <li class="flex items-start gap-2"><span class="chip chip-green">✓</span> Self-produced materials and school documents</li>
+            <li class="flex items-start gap-2"><span class="chip chip-green">✓</span> Genuinely useful text extracts (targeted)</li>
+            <li class="flex items-start gap-2"><span class="chip chip-green">✓</span> Clear and readable sources (selectable text)</li>
+            <li class="flex items-start gap-2"><span class="chip chip-green">✓</span> Work in "blocks" (chapters/topics)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="glass-card border-t-8 border-blue-500 mt-8">
+        <h4 class="text-xl font-black mb-3"><i class="fa-brands fa-google text-blue-600 mr-2"></i>NotebookLM and Google Workspace for Education</h4>
+        <p class="text-sm text-slate-700 mb-4">If the school uses <strong>Google Workspace for Education</strong>, data remains within the school domain and is subject to Google for Education's GDPR policies — an additional level of protection compared to personal accounts.</p>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="soft-card"><p class="font-black text-sm"><i class="fa-solid fa-school text-blue-600 mr-2"></i>School account (@agrariomendel.it)</p><p class="text-xs text-slate-600 mt-1">Preferable for all teaching use. Data is not used to train Google's AI models.</p></div>
+          <div class="soft-card"><p class="font-black text-sm"><i class="fa-solid fa-user text-slate-600 mr-2"></i>Personal account (@gmail.com)</p><p class="text-xs text-slate-600 mt-1">Works perfectly but applies standard policies. Avoid uploading confidential data.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="text-center py-14 reveal">
+      <div class="glow-card inline-block max-w-2xl w-full">
+        <div class="glow-card-inner">
+          <div class="bg-gradient-to-br from-mendel-green to-green-700 p-4 rounded-2xl text-white shadow-xl float-animation w-fit mx-auto mb-6">
+            <i class="fa-solid fa-graduation-cap text-3xl"></i>
+          </div>
+          <h4 class="text-3xl font-black tracking-tighter">Ready to start?</h4>
+          <p class="text-slate-500 mt-3 text-sm leading-relaxed">Start with a short PDF, use the Study Zone and then move to Chat. Save the best answers as notes: they become your permanent teaching "toolbox".</p>
+          <a href="https://notebooklm.google.com" target="_blank"
+             class="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-mendel-green to-green-600 text-white px-8 py-4 rounded-full font-black text-sm uppercase tracking-widest hover:shadow-2xl transition-all shadow-lg hover:scale-105">
+            <i class="fa-solid fa-leaf"></i> Open NotebookLM now <i class="fa-solid fa-arrow-right ml-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer style="background:linear-gradient(135deg,#0f172a,#1e293b); color:#fff;" class="py-16 relative overflow-hidden">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(34,197,94,.08),transparent 60%);pointer-events:none;"></div>
+    <div class="container mx-auto px-6 text-center relative z-10">
+      <div class="flex justify-center mb-8">
+        <div class="bg-gradient-to-br from-mendel-green to-green-700 p-4 rounded-3xl text-white shadow-2xl float-animation">
+          <i class="fa-solid fa-graduation-cap text-4xl"></i>
+        </div>
+      </div>
+      <p class="text-xl font-black uppercase tracking-widest mb-1">IIS Gregorio Mendel</p>
+      <p class="text-xs text-slate-400 uppercase font-bold tracking-[.3em] mb-8">Villa Cortese · Milan</p>
+      <div class="h-px w-24 mx-auto mb-8" style="background:rgba(255,255,255,.1);"></div>
+      <p class="text-xs text-slate-400">Guide created by the IIS MENDEL Digital Team</p>
+    </div>
+  </footer>
+
+  <div id="imgZoomModal" onclick="closeZoom()" style="position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;z-index:9999;align-items:center;justify-content:center;padding:1rem;">
+    <img id="imgZoom" style="max-width:95vw;max-height:95vh;border-radius:1.5rem;box-shadow:0 40px 100px rgba(0,0,0,.5);cursor:zoom-out;" onclick="event.stopPropagation();closeZoom()">
+  </div>
+
+  <script>
+    // Zoom
+    window.openZoom = function(src) {
+      const m = document.getElementById('imgZoomModal');
+      document.getElementById('imgZoom').src = src;
+      m.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    };
+    window.closeZoom = function() {
+      document.getElementById('imgZoomModal').style.display = 'none';
+      document.body.style.overflow = '';
+    };
+    document.addEventListener('keydown', e => { if(e.key === 'Escape') closeZoom(); });
+
+    // Scroll reveal
+    const revealEls = document.querySelectorAll('.reveal');
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); } });
+    }, { threshold: 0.08 });
+    revealEls.forEach(el => revealObs.observe(el));
+
+    // Copy buttons
+    document.querySelectorAll('[data-copy]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const el = document.getElementById(btn.getAttribute('data-copy'));
+        if(!el) return;
+        try {
+          await navigator.clipboard.writeText(el.innerText);
+          const old = btn.innerHTML;
+          btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+          btn.style.background = '#f0fdf4'; btn.style.color = '#166534';
+          setTimeout(() => { btn.innerHTML = old; btn.style.background = ''; btn.style.color = ''; }, 1400);
+        } catch(e) {
+          const r = document.createRange(); r.selectNodeContents(el);
+          window.getSelection().removeAllRanges(); window.getSelection().addRange(r);
+        }
+      });
+    });
+
+    // Scroll to top
+    const toTop = document.getElementById('toTop');
+    window.addEventListener('scroll', () => {
+      toTop.style.display = window.scrollY > 600 ? 'inline-flex' : 'none';
+    }, { passive: true });
+    toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    // Chart
+    window.addEventListener('load', () => {
+      const ctx = document.getElementById('impactChart')?.getContext('2d');
+      if(!ctx) return;
+      new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ['Sintesi\nDocumenti', 'Analisi\nFonti', 'Inclusion\nBES/DSA', 'Velocità\nPreparazione', 'Supporto\nStudenti', 'Qualità\nVerifiche'],
+          datasets: [{
+            label: 'NotebookLM Impact',
+            data: [95, 85, 90, 100, 80, 95],
+            backgroundColor: 'rgba(34,197,94,.18)',
+            borderColor: '#22c55e',
+            borderWidth: 3,
+            pointBackgroundColor: '#365314',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#365314',
+            pointRadius: 6,
+            pointHoverRadius: 9
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          scales: { r: { min: 0, max: 100, beginAtZero: true, angleLines: { display: false }, ticks: { display: false }, grid: { color: '#e2e8f0' } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
