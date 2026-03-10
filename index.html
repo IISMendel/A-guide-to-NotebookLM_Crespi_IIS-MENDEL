@@ -4,23 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NotebookLM Manual – IIS Mendel Villa Cortese</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            mendel: {
-              green: "#365314", earth: "#854D0E", light: "#F8FAF5",
-              slate: "#1E293B", accent: "#166534"
+    window.tailwind = {
+      config: {
+        theme: {
+          extend: {
+            colors: {
+              mendel: {
+                green: "#365314", earth: "#854D0E", light: "#F8FAF5",
+                slate: "#1E293B", accent: "#166534"
+              }
             }
           }
         }
       }
     }
   </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&display=swap');
     :root { color-scheme: light; --green-main: #365314; --green-mid: #16a34a; --green-light: #22c55e; }
@@ -295,19 +297,36 @@
   <div class="blob blob-3"></div>
 
   <nav class="glass-header sticky top-0 z-50">
-    <div class="container mx-auto px-4 py-3 flex flex-col lg:flex-row justify-between items-center gap-3">
-      <div class="flex items-center space-x-3">
-        <div class="bg-gradient-to-br from-mendel-green to-green-600 p-2.5 rounded-2xl text-white shadow-xl float-animation">
-          <i class="fa-solid fa-leaf text-2xl"></i>
+    <div class="container mx-auto px-4 py-3">
+      <!-- Top bar: logo + hamburger -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="bg-gradient-to-br from-mendel-green to-green-600 p-2.5 rounded-2xl text-white shadow-xl float-animation">
+            <i class="fa-solid fa-leaf text-2xl"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-black uppercase tracking-tighter leading-none text-slate-900">
+              Mendel <span class="gradient-text">NotebookLM</span>
+            </h1>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Operational Manual for Teachers</p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-xl font-black uppercase tracking-tighter leading-none text-slate-900">
-            Mendel <span class="gradient-text">NotebookLM</span>
-          </h1>
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Operational Manual for Teachers</p>
-        </div>
+        <!-- Hamburger button (mobile only) -->
+        <button id="navToggle" type="button" aria-label="Toggle menu"
+          class="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-2xl border border-slate-200 bg-white shadow gap-1.5 transition-all hover:bg-green-50"
+          onclick="toggleNav()">
+          <span id="hb1" class="block w-5 h-0.5 bg-slate-700 rounded transition-all duration-300"></span>
+          <span id="hb2" class="block w-5 h-0.5 bg-slate-700 rounded transition-all duration-300"></span>
+          <span id="hb3" class="block w-5 h-0.5 bg-slate-700 rounded transition-all duration-300"></span>
+        </button>
+        <!-- Desktop: open button -->
+        <a href="https://notebooklm.google.com" target="_blank"
+           class="hidden lg:inline-flex items-center gap-2 bg-gradient-to-r from-mendel-green to-green-600 text-white px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-widest hover:shadow-2xl transition-all shadow-lg hover:scale-105 hover:from-green-700 hover:to-green-500 ml-2">
+          Open NotebookLM <i class="fa-solid fa-arrow-right ml-1"></i>
+        </a>
       </div>
-      <div class="flex flex-wrap items-center justify-center gap-1.5">
+      <!-- Desktop pill row -->
+      <div class="hidden lg:flex flex-wrap items-center justify-center gap-1.5 mt-2">
         <a href="#intro" class="pill"><i class="fa-solid fa-compass"></i> Intro</a>
         <a href="#workspace" class="pill"><i class="fa-solid fa-cloud"></i> Workspace</a>
         <a href="#riassunto" class="pill"><i class="fa-solid fa-table"></i> Summary</a>
@@ -319,7 +338,7 @@
         <a href="#presentazioni" class="pill"><i class="fa-solid fa-desktop"></i> Slides</a>
         <a href="#deep-research" class="pill"><i class="fa-solid fa-magnifying-glass"></i> Deep Research</a>
         <a href="#tabella-dati" class="pill"><i class="fa-solid fa-table-cells"></i> Tables</a>
-        <a href="#template-prompt" class="pill"><i class="fa-solid fa-terminal"></i> Templatess</a>
+        <a href="#template-prompt" class="pill"><i class="fa-solid fa-terminal"></i> Templates</a>
         <a href="#prompt" class="pill"><i class="fa-solid fa-bolt"></i> Subjects</a>
         <a href="#ricette" class="pill"><i class="fa-solid fa-utensils"></i> Recipes</a>
         <a href="#mobile" class="pill"><i class="fa-solid fa-mobile-screen"></i> App</a>
@@ -327,10 +346,34 @@
         <a href="#errori" class="pill"><i class="fa-solid fa-triangle-exclamation"></i> Issues</a>
         <a href="#inclusione" class="pill"><i class="fa-solid fa-universal-access"></i> Inclusion</a>
         <a href="#privacy" class="pill"><i class="fa-solid fa-shield-halved"></i> Privacy</a>
-        <a href="https://notebooklm.google.com" target="_blank"
-           class="bg-gradient-to-r from-mendel-green to-green-600 text-white px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-widest hover:shadow-2xl transition-all shadow-lg hover:scale-105 hover:from-green-700 hover:to-green-500 ml-2">
-          Open NotebookLM <i class="fa-solid fa-arrow-right ml-1"></i>
-        </a>
+      </div>
+      <!-- Mobile dropdown menu (hidden by default) -->
+      <div id="mobileMenu" class="lg:hidden overflow-hidden transition-all duration-300" style="max-height:0;">
+        <div class="pt-3 pb-2 flex flex-wrap gap-2 justify-center">
+          <a href="#intro" class="pill" onclick="closeNav()"><i class="fa-solid fa-compass"></i> Intro</a>
+          <a href="#workspace" class="pill" onclick="closeNav()"><i class="fa-solid fa-cloud"></i> Workspace</a>
+          <a href="#riassunto" class="pill" onclick="closeNav()"><i class="fa-solid fa-table"></i> Summary</a>
+          <a href="#materiali" class="pill" onclick="closeNav()"><i class="fa-solid fa-folder-open"></i> Materials</a>
+          <a href="#primo-uso" class="pill" onclick="closeNav()"><i class="fa-solid fa-rocket"></i> First Use</a>
+          <a href="#interfaccia" class="pill" onclick="closeNav()"><i class="fa-solid fa-window-maximize"></i> Interface</a>
+          <a href="#zona-studio" class="pill" onclick="closeNav()"><i class="fa-solid fa-graduation-cap"></i> Study Zone</a>
+          <a href="#audio-video" class="pill" onclick="closeNav()"><i class="fa-solid fa-headphones"></i> Audio/Video</a>
+          <a href="#presentazioni" class="pill" onclick="closeNav()"><i class="fa-solid fa-desktop"></i> Slides</a>
+          <a href="#deep-research" class="pill" onclick="closeNav()"><i class="fa-solid fa-magnifying-glass"></i> Deep Research</a>
+          <a href="#tabella-dati" class="pill" onclick="closeNav()"><i class="fa-solid fa-table-cells"></i> Tables</a>
+          <a href="#template-prompt" class="pill" onclick="closeNav()"><i class="fa-solid fa-terminal"></i> Templates</a>
+          <a href="#prompt" class="pill" onclick="closeNav()"><i class="fa-solid fa-bolt"></i> Subjects</a>
+          <a href="#ricette" class="pill" onclick="closeNav()"><i class="fa-solid fa-utensils"></i> Recipes</a>
+          <a href="#mobile" class="pill" onclick="closeNav()"><i class="fa-solid fa-mobile-screen"></i> App</a>
+          <a href="#condivisione" class="pill" onclick="closeNav()"><i class="fa-solid fa-share-nodes"></i> Share</a>
+          <a href="#errori" class="pill" onclick="closeNav()"><i class="fa-solid fa-triangle-exclamation"></i> Issues</a>
+          <a href="#inclusione" class="pill" onclick="closeNav()"><i class="fa-solid fa-universal-access"></i> Inclusion</a>
+          <a href="#privacy" class="pill" onclick="closeNav()"><i class="fa-solid fa-shield-halved"></i> Privacy</a>
+          <a href="https://notebooklm.google.com" target="_blank" onclick="closeNav()"
+             class="bg-gradient-to-r from-mendel-green to-green-600 text-white px-5 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-lg">
+            Open NotebookLM <i class="fa-solid fa-arrow-right ml-1"></i>
+          </a>
+        </div>
       </div>
     </div>
   </nav>
@@ -1696,6 +1739,46 @@
         }
       });
     });
+
+    // ── Hamburger menu ──
+    let navOpen = false;
+    window.toggleNav = function() {
+      navOpen = !navOpen;
+      const menu = document.getElementById('mobileMenu');
+      const h1 = document.getElementById('hb1');
+      const h2 = document.getElementById('hb2');
+      const h3 = document.getElementById('hb3');
+      if (navOpen) {
+        menu.style.maxHeight = menu.scrollHeight + 'px';
+        h1.style.transform = 'translateY(8px) rotate(45deg)';
+        h2.style.opacity = '0';
+        h3.style.transform = 'translateY(-8px) rotate(-45deg)';
+      } else {
+        menu.style.maxHeight = '0';
+        h1.style.transform = '';
+        h2.style.opacity = '1';
+        h3.style.transform = '';
+      }
+    };
+    window.closeNav = function() {
+      if (!navOpen) return;
+      navOpen = false;
+      const menu = document.getElementById('mobileMenu');
+      menu.style.maxHeight = '0';
+      document.getElementById('hb1').style.transform = '';
+      document.getElementById('hb2').style.opacity = '1';
+      document.getElementById('hb3').style.transform = '';
+    };
+
+    // ── Dynamic scroll-margin for anchors ──
+    function updateAnchorMargin() {
+      const navH = document.querySelector('nav').offsetHeight;
+      document.querySelectorAll('.anchor').forEach(el => {
+        el.style.scrollMarginTop = (navH + 16) + 'px';
+      });
+    }
+    updateAnchorMargin();
+    window.addEventListener('resize', updateAnchorMargin);
 
     // Scroll to top
     const toTop = document.getElementById('toTop');
